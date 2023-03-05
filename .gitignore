@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# mystuff
+/.vscode
+*.mid
+*.midi
+*.mcpack
+*.bdx
+*.json
+/logs
+
 # C extensions
 *.so
 
@@ -136,3 +145,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Pycharm
+.idea/

@@ -1,3 +1,30 @@
+**注意，以下条款或版权声明应当且必须是高于此仓库中任何其他声明的**
+
+1. 此项目项目的全部开发者享有其完整版权，其开发者可以在任一时刻终止以后的源代码开放，若经由其开发者授予特殊权利，则授权对象可以将源代码进行特定的被特殊授权的操作
+2. 此项目或（及）其代码允许在 Apache2.0 协议的条款与说明下进行非商业使用
+3. 除部分代码特殊声明外，此项目允许对其或（及）其代码进行商业化使用，但是需要经过项目的主要开发者一致授权，同时，授权对象在商业化授权的使用过程中必须依照 Apache2.0 协议的条款与说明
+4. 若存在对于此项目中包含的部分代码的特殊开源声明，则此部分代码依照其特定的开源方式授权，但若此部分代码经由此部分代码的主要开发者一致特殊授权后商用，则授权对象在商用时依照此部分的开发者所准许的方式（或条款）进行商用
+5. Apache2.0 协议的英文原文副本可见下文
+
+>  The English Translation of the TERMS AND CONDITIONS above is listed below
+>
+>  This translated version is for reference only and has no legal effect.
+>
+>  The version with legal effect is the Chinese version above.
+
+**Note, The TERMS AND CONDITIONS below should and must be above all others in this repository**
+
+1. *This Project* is fully copyrighted by all its developers, the developers have the right to make *This Project* close sourced at any time. Operations are permitted under specific terms instructed by its developer(s).
+2. Non-commercial use of *This Project* and(or) its source code is permitted under Apache License 2.0.
+3. Commercial use of *This Project* is permitted under Apache License 2.0 with the unanimous permission of the steering developers of *This Project*. 
+4. *This Project* is open sourced under priority given:
+   1. License granted by the core developer(s) of a section after negotiation.
+   2. Explicitly stated license.
+   3. Apache 2.0 License.
+5. A copy of the original Apache Lisence 2.0 can be found below.
+
+
+```text
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -175,18 +202,8 @@
 
    END OF TERMS AND CONDITIONS
 
-   APPENDIX: How to apply the Apache License to your work.
 
-      To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "[]"
-      replaced with your own identifying information. (Don't include
-      the brackets!)  The text should be enclosed in the appropriate
-      comment syntax for the file format. We also recommend that a
-      file or class name and description of purpose be included on the
-      same "printed page" as the copyright notice for easier
-      identification within third-party archives.
-
-   Copyright [yyyy] [name of copyright owner]
+   Copyright 2022 Team-Ryoun 金羿("Eilles Wan") & 诸葛亮与八卦阵("bgArray")
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -199,3 +216,4 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+```
