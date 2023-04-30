@@ -17,7 +17,7 @@ Terms & Conditions: ../License.md
 
 from .main import *
 
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 __all__ = []
 __author__ = (("金羿", "Eilles Wan"),("thecasttim","thecasttim"))
 
