@@ -6,9 +6,9 @@ __pycache__/
 # mystuff
 /.vscode
 *.mid
-*.midi
-*.mcpack
-*.bdx
+*.txt
+*.mp3
+*.wav
 *.json
 *.lrc
 /logs

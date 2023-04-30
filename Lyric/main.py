@@ -44,7 +44,7 @@ from .subclass import *
 
 @dataclass(init=False)
 class Lyric:
-    """歌词的操作"""
+    """歌词的操作以及数据类"""
 
     lyrics: Dict[TimeStamp, SingleLineLyric]
     """歌词字典，以一个时间戳对应一个单行歌词类"""
@@ -73,7 +73,7 @@ class Lyric:
     @classmethod
     def from_lrc(cls, lrc_path: str, lrc_encoding: str = "utf-8"):
         """
-        从Lrc歌词文件打开
+        从Lrc歌词文件获取歌词对象
         """
         with codecs.open(lrc_path, "r", encoding=lrc_encoding) as f:
             # 整个歌词文件的内容

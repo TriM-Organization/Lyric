@@ -31,16 +31,23 @@ class TimeStamp:
         seconds: Union[float, int] = 0,
         ms: int = 0,
     ):
-        """定义一个时间戳"""
+        """
+        定义一个时间戳
+
+        Parameters
+        ----------
+        hours, minutes, seconds, ms 正如其名
+        分别是距离开始时的 时、分、秒、毫秒
+        """
 
         if ms != int(ms):
             raise TimeTooPreciseError("毫秒不应为小数。")
 
         microseconds = ms + seconds * 1000 + minutes * 60000 + hours * 360000
 
-        self.microseconds = microseconds % 1000
-        self.seconds = int(microseconds / 1000) % 60
-        self.minutes = int(microseconds / 60000) % 60
+        self.microseconds = int(microseconds % 1000)
+        self.seconds = int(microseconds / 1000 % 60)
+        self.minutes = int(microseconds / 60000 % 60)
         self.hours = int(microseconds / 360000)
 
     @classmethod
@@ -182,7 +189,7 @@ class TimeStamp:
         }
 
     def __hash__(self) -> int:
-        return int(
+        return hash(
             "{}{}{}{}".format(
                 self.get_hours,
                 self.get_minutes,
@@ -260,7 +267,7 @@ class SingleLineLyric:
         if self.word_extension:
             "".join(
                 [
-                    r"<{time}>{word}".format(word, time.to_lrc_str())
+                    r"<{}>{}".format(time.to_lrc_str(), word)
                     for time, word in self.word_extension.items()
                 ]
             )
