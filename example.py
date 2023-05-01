@@ -1,4 +1,4 @@
-from Lyric import Lyric, TimeStamp
+from LyricLib import Lyric, TimeStamp
 from rich.console import Console
 
 MainConsole = Console()

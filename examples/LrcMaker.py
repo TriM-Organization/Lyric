@@ -1,7 +1,7 @@
 
 import time
 
-from Lyric import Lyric, LRC_ID_TAG2META_NAME, TimeStamp, SingleLineLyric
+from LyricLib import Lyric, LRC_ID_TAG2META_NAME, TimeStamp, SingleLineLyric
 import threading
 
 lyric = Lyric()

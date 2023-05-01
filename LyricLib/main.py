@@ -27,8 +27,8 @@
     SOFTWARE.
 
 继承协议：
-版权所有© 全体 Lyric 作者 及 thecasttim
-Copyright 2022-2023 thecasttim and all the developers of Lyric
+版权所有© 全体 LyricLib 作者 及 thecasttim
+Copyright 2022-2023 thecasttim and all the developers of LyricLib
 
 开源相关声明请见 ../License.md
 Terms & Conditions: ../License.md

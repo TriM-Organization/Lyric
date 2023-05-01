@@ -1,6 +1,6 @@
 <h1 align="center">歌词 Lyric</h1>
 
-<h3 align="center">歌词的处理库。</h3>
+<h3 align="center">歌词的处理库</h3>
 
 <p align="center">
 <img src="https://forthebadge.com/images/badges/built-with-love.svg">
