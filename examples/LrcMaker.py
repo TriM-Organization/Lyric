@@ -25,6 +25,8 @@ threading.Thread(target=PlaySound,args=(music_file,SND_FILENAME)).start()
 
 start_time = time.time()
 
+
+# 这样的写法是有问题的
 for line in lines:
     input(line)
     t = TimeStamp(seconds=time.time()-start_time)

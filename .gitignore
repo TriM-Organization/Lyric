@@ -6,12 +6,12 @@ __pycache__/
 # mystuff
 /.vscode
 *.mid
-*.txt
+/*.txt
 *.mp3
 *.wav
 *.json
 *.lrc
-/logs
+/logs/
 
 # C extensions
 *.so

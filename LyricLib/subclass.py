@@ -204,10 +204,24 @@ class TimeStamp:
         return self.__str__() == other.__str__()
 
     def __str__(self) -> str:
-        """直接以最完整的格式输出字符串"""
+        """
+        直接以最完整的格式输出字符串
+        """
         return "{}:{}:{}.{}".format(
             self.get_hours, self.get_minutes, self.get_seconds, self.get_microseconds
         )
+    
+    def __lt__(self, other) -> bool:
+        """
+        判小于
+        """
+        return self.in_microseconds < other.in_microseconds
+
+    def __cmp__(self, other) -> int:
+        """
+        比较
+        """
+        return self.in_microseconds - other.in_microseconds
 
     def to_lrc_str(self, format_style: str = STABLE_LRC_TIME_FORMAT_STYLE) -> str:
         """
