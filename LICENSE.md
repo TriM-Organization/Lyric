@@ -4,7 +4,7 @@
 2. 此项目或（及）其代码允许在 Apache2.0 协议的条款与说明下进行非商业使用
 3. 除部分代码特殊声明外，此项目允许对其或（及）其代码进行商业化使用，但是需要经过项目的主要开发者一致授权，同时，授权对象在商业化授权的使用过程中必须依照 Apache2.0 协议的条款与说明
 4. 若存在对于此项目中包含的部分代码的特殊开源声明，则此部分代码依照其特定的开源方式授权，但若此部分代码经由此部分代码的主要开发者一致特殊授权后商用，则授权对象在商用时依照此部分的开发者所准许的方式（或条款）进行商用
-5. Apache2.0 协议的英文原文副本可见下文
+5. Apache2.0 协议的英文原文副本可见下方
 
 >  The English Translation of the TERMS AND CONDITIONS above is listed below
 >
@@ -203,7 +203,7 @@
    END OF TERMS AND CONDITIONS
 
 
-   Copyright 2022-2023 thecasttim and all the developers of Lyric
+   Copyright 2022-2023 thecasttim and all the developers of LyricLib
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

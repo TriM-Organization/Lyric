@@ -1,4 +1,4 @@
-<h1 align="center">歌词 Lyric</h1>
+<h1 align="center">歌词 LyricLib</h1>
 
 <h3 align="center">歌词的处理库</h3>
 
@@ -19,11 +19,11 @@
 
 ## 介绍🚀
 
-Lyric是一个简单的歌词处理库
+LyricLib是一个简单的歌词处理库
 
 欢迎加群：[861684859](https://jq.qq.com/?_wv=1027&k=hpeRxrYr)
 
-## 使用📖
+## 文档📖
 
 暂无
 

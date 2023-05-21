@@ -27,7 +27,7 @@
     SOFTWARE.
 
 继承协议：
-版权所有© 全体 LyricLib 作者 及 thecasttim
+版权所有© 2022-2023 全体 LyricLib 作者 及 thecasttim
 Copyright 2022-2023 thecasttim and all the developers of LyricLib
 
 开源相关声明请见 ../License.md
@@ -206,17 +206,17 @@ class Lyric:
 
     @property
     def get_ids(self):
-        # 获取 ID 标签列表
+        """获取 ID 标签列表"""
         return self.meta_info
 
     @property
     def get_lyrics(self):
-        # 获取歌词列表
+        """获取歌词列表"""
         return self.lyrics
 
     @property
     def get_unknowns(self):
-        # 获取未知标签字段列表
+        """获取未知标签字段列表"""
         return self.extra_info
 
     def to_lrc(self, fdist: TextIO, time_format_style=STABLE_LRC_TIME_FORMAT_STYLE):

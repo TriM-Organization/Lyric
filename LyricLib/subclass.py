@@ -65,15 +65,15 @@ class TimeStamp:
         try:
             # print(time_tag_str)
             return cls(
-                *cls.parse_time_tag(time_tag_str.replace("[", "").replace("]", ""))
+                *cls.parse_lrc_time_tag(time_tag_str.replace("[", "").replace("]", ""))
             )
         except TimeTooPreciseError:
             raise LrcDestroyedError("时间标签出现错误: {}".format(time_tag_str), time_tag_str)
 
     @staticmethod
-    def parse_time_tag(time_tag_str):
+    def parse_lrc_time_tag(time_tag_str):
         """
-        将字符串格式的时间戳解析为 时、分、秒、毫秒
+        将LRC文件的字符串格式的时间戳解析为 时、分、秒、毫秒
 
         Parameters
         ----------
@@ -250,7 +250,7 @@ class SingleLineLyric:
 
     @classmethod
     def from_lrc_str_dict(cls, sentence: str, **extension):
-        """从lrc时间标签字符串而组成的字典中获取附加信息"""
+        """从LRC时间标签字符串而组成的字典中获取附加信息"""
         word_extension = {}
         for time_str, word in extension.items():
             word_extension[TimeStamp.from_lrc_time_tag(time_tag_str=time_str)] = word
@@ -260,7 +260,7 @@ class SingleLineLyric:
     def from_lrc_str_list(
         cls, sentence: str, time_str_list: List[str], word_list: List[str]
     ):
-        """从lrc时间列表和单词列表中获取附加信息"""
+        """从LRC时间列表和单词列表中获取附加信息"""
         time_list_length = len(time_str_list)
         word_list_length = len(word_list)
         if time_list_length != word_list_length:
@@ -362,6 +362,7 @@ class LyricMetaInfo:
         }
 
     def set_meta(self, meta_name: str, meta_value: str):
+        """设置单个元信息"""
         if meta_name == "Singer":
             self.Singer = meta_value
         elif meta_name == "Album":
