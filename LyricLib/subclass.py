@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Tuple
 
 from .constants import *
 from .exceptions import *
@@ -71,7 +71,7 @@ class TimeStamp:
             raise LrcDestroyedError("时间标签出现错误: {}".format(time_tag_str), time_tag_str)
 
     @staticmethod
-    def parse_lrc_time_tag(time_tag_str):
+    def parse_lrc_time_tag(time_tag_str) -> Tuple[int,...]:
         """
         将LRC文件的字符串格式的时间戳解析为 时、分、秒、毫秒
 
@@ -87,7 +87,10 @@ class TimeStamp:
         """
 
         m = re.match(LRC_TIME_PATTERN, time_tag_str)
-        time_parts = m.groupdict()
+        if m:
+            time_parts = m.groupdict()
+        else:
+            raise TimeTagError(time_tag_str)
 
         # 毫秒
         ms = 0
@@ -124,7 +127,7 @@ class TimeStamp:
         return self.hours
 
     @property
-    def in_hours(self) -> int:
+    def in_hours(self) -> float:
         """以小时为单位的时间戳"""
         return (
             self.hours
@@ -139,7 +142,7 @@ class TimeStamp:
         return self.minutes
 
     @property
-    def in_minutes(self) -> int:
+    def in_minutes(self) -> float:
         """以分钟为单位的时间戳"""
         return (
             self.hours * 60
@@ -154,7 +157,7 @@ class TimeStamp:
         return self.seconds
 
     @property
-    def in_seconds(self) -> int:
+    def in_seconds(self) -> float:
         """以秒为单位的时间戳"""
         return (
             self.hours * 360
@@ -279,7 +282,7 @@ class SingleLineLyric:
 
     def __str__(self) -> str:
         if self.word_extension:
-            "".join(
+            return "".join(
                 [
                     r"<{}>{}".format(time.to_lrc_str(), word)
                     for time, word in self.word_extension.items()

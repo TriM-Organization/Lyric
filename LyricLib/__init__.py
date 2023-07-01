@@ -18,5 +18,22 @@ Terms & Conditions: ../License.md
 from .main import *
 
 __version__ = "0.0.3.1"
-__all__ = []
+__all__ = [
+
+    # 主类
+    "Lyric",
+
+    # 副类
+    "TimeStamp",
+    "SingleLineLyric",
+    "LyricMetaInfo",
+    
+    # 常量
+    "LRC_ID_TAG2META_NAME",
+    "STABLE_LRC_TIME_FORMAT_STYLE",
+    "LRC_TAG_PATTERN",
+    "LRC_TIME_PATTERN",
+    "LRC_ENHANCE_TIME_PATTERN_C",
+    "LRC_ENHANCE_TIME_PATTERN_N",
+]
 __author__ = (("金羿", "Eilles Wan"), ("thecasttim", "thecasttim"))

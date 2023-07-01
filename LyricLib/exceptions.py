@@ -1,5 +1,3 @@
-
-
 class LyricBaseException(Exception):
     """歌词库的所有错误均继承于此"""
 
@@ -8,7 +6,7 @@ class LyricBaseException(Exception):
         super().__init__(*args)
 
     def aowu(
-            self,
+        self,
     ):
         for i in self.args:
             print(i + "嗷呜！")
@@ -17,15 +15,12 @@ class LyricBaseException(Exception):
         raise self
 
 
-
-
 class LrcDestroyedError(LyricBaseException):
     """Lrc文件损坏"""
 
     def __init__(self, *args):
         """Lrc文件损坏"""
         super().__init__("Lrc文件损坏", *args)
-
 
 
 class TimeTooPreciseError(LyricBaseException):
@@ -41,5 +36,14 @@ class WordTagError(LyricBaseException):
 
     def __init__(self, words_less_than_tags: bool = True, *args):
         """字词标签未一一对应"""
-        super().__init__("字词标签错误：字词{}标签个数".format("小于" if words_less_than_tags else "大于"), *args)
+        super().__init__(
+            "字词标签错误：字词{}标签个数".format("小于" if words_less_than_tags else "大于"), *args
+        )
 
+
+class TimeTagError(LyricBaseException):
+    """时间标签错误"""
+
+    def __init__(self, sth: str = "", *args):
+        """未匹配到时间标签"""
+        super().__init__("无法在 {} 中匹配时间标签。".format(sth), *args)

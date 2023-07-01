@@ -21,10 +21,10 @@ LRC_ID_TAG2META_NAME = {
     "ve": "Version",
     "offset": "Offset",
 }
-'''LRC歌词ID标签转元信息名称'''
+"""LRC歌词ID标签转元信息名称"""
 
 STABLE_LRC_TIME_FORMAT_STYLE = r"{mm}:{ss}.{xx}"
-'''标准LRC时间格式'''
+"""标准LRC时间格式"""
 
 # 正则表达式
 
