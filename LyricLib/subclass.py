@@ -17,7 +17,7 @@ class TagType(Enum):
 
 @dataclass(init=False)
 class TimeStamp:
-    """时间类"""
+    """时间戳类"""
 
     hours: int
     minutes: int
