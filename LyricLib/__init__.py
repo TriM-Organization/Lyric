@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 简单的歌词处理库
-A library for parsing, reading & editing LyricLib
+A library for parsing, reading & editing Lyrics
 
 版权所有© 2022-2023 全体 LyricLib 作者 及 thecasttim
 Copyright 2022-2023 thecasttim and all the developers of LyricLib
