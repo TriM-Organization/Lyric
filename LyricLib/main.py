@@ -74,6 +74,8 @@ class Lyric:
     def from_lrc(cls, lrc_path: str, lrc_encoding: str = "utf-8"):
         """
         从Lrc歌词文件获取歌词对象
+        lrc_path: str LRC歌词文件地址
+        lrc_encoding: str LRC歌词文件所使用的字符编码
         """
         with codecs.open(lrc_path, "r", encoding=lrc_encoding) as f:
             # 整个歌词文件的内容
@@ -127,9 +129,15 @@ class Lyric:
             elif tag_type == TagType.ID:
                 # 若为ID标签，载入信息字典中
                 colon_pos = tags[i].find(":")
-                lrc.meta_info.set_meta(
-                    LRC_ID_TAG2META_NAME[tags[i][:colon_pos]], tags[i][colon_pos + 1 :]
-                )
+                if tags[i][:colon_pos] in LRC_ID_TAG2META_NAME.keys():
+                    lrc.meta_info.set_meta(
+                        LRC_ID_TAG2META_NAME[tags[i][:colon_pos]],
+                        tags[i][colon_pos + 1 :],
+                    )
+                else:
+                    lrc.meta_info.set_meta(
+                        tags[i][:colon_pos], tags[i][colon_pos + 1 :]
+                    )
 
             elif tag_type == TagType.UNKNOWN:
                 # 未知标签，独立载入

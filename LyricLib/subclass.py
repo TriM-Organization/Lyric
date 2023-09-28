@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Tuple, Union
 
 from .constants import *
 from .exceptions import *
@@ -71,7 +71,7 @@ class TimeStamp:
             raise LrcDestroyedError("时间标签出现错误: {}".format(time_tag_str), time_tag_str)
 
     @staticmethod
-    def parse_lrc_time_tag(time_tag_str) -> Tuple[int,...]:
+    def parse_lrc_time_tag(time_tag_str) -> Tuple[int, ...]:
         """
         将LRC文件的字符串格式的时间戳解析为 时、分、秒、毫秒
 
@@ -213,7 +213,7 @@ class TimeStamp:
         return "{}:{}:{}.{}".format(
             self.get_hours, self.get_minutes, self.get_seconds, self.get_microseconds
         )
-    
+
     def __lt__(self, other) -> bool:
         """
         判小于
@@ -321,6 +321,7 @@ class LyricMetaInfo:
     Editor: str
     Version: str
     Offset: str
+    Other: Dict[str, str]
 
     def __init__(
         self,
@@ -350,7 +351,7 @@ class LyricMetaInfo:
         self.Offset = Offset
 
     def __dict__(self):
-        return {
+        result = {
             "Singer": self.Singer,
             "Album": self.Album,
             "Title": self.Title,
@@ -363,6 +364,8 @@ class LyricMetaInfo:
             "Version": self.Version,
             "Offset": self.Offset,
         }
+        result.update(self.Other)
+        return result
 
     def set_meta(self, meta_name: str, meta_value: str):
         """设置单个元信息"""
@@ -388,13 +391,28 @@ class LyricMetaInfo:
             self.Version = meta_value
         elif meta_name == "Offset":
             self.Offset = meta_value
+        else:
+            self.Other[meta_name.capitalize()] = meta_value
 
     def lrc_id_dict(self):
         """
         返回LRC文件中所需的ID字典
         """
         result = LRC_ID_TAG2META_NAME
-        now_d = self.__dict__()
+        now_d = {
+            "Singer": self.Singer,
+            "Album": self.Album,
+            "Title": self.Title,
+            "LyricAuthor": self.LyricAuthor,
+            "Composer": self.Composer,
+            "Arranger": self.Arranger,
+            "Length": self.Length,
+            "Recorder": self.Recorder,
+            "Editor": self.Editor,
+            "Version": self.Version,
+            "Offset": self.Offset,
+        }
         for k in result.keys():
             result[k] = now_d[result[k]]
+        result.update(self.Other)
         return result

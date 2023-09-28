@@ -20,6 +20,7 @@ LRC_ID_TAG2META_NAME = {
     "re": "Editor",
     "ve": "Version",
     "offset": "Offset",
+    "ver": "Version",
 }
 """LRC歌词ID标签转元信息名称"""
 
