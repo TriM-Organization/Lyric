@@ -55,6 +55,9 @@ class Lyric:
     extra_info: Dict[str, Any]
     """特殊信息字典"""
 
+    whole_contexts: str
+    """仅字词"""
+
     def __init__(
         self,
         lyrics: Dict[TimeStamp, SingleLineLyric] = {},
@@ -69,6 +72,8 @@ class Lyric:
         self.meta_info = meta_info
 
         self.extra_info = {}
+
+        self.whole_contexts = ""
 
     @classmethod
     def from_lrc(cls, lrc_path: str, lrc_encoding: str = "utf-8"):
@@ -110,21 +115,20 @@ class Lyric:
             # 判断标签是时间标签还是ID标签, 分别处理
             if tag_type == TagType.TIME:
                 # 若为时间标签，载入歌词
-
+                time_now = TimeStamp.from_lrc_time_tag(tags[i])
                 if lrc.is_enhanced(segments[i]):
                     # 增强格式（字词标签处理）
                     timestamps, parts = lrc.parse_enhanced_lrc(segments[i])
 
-                    lrc.lyrics[
-                        TimeStamp.from_lrc_time_tag(tags[i])
-                    ] = SingleLineLyric.from_lrc_str_list(
+                    lrc.lyrics[time_now] = SingleLineLyric.from_lrc_str_list(
                         "".join(parts), timestamps, parts[1:]
                     )
                 else:
                     # 普通格式（单句标签）
-                    lrc.lyrics[TimeStamp.from_lrc_time_tag(tags[i])] = SingleLineLyric(
-                        segments[i]
-                    )
+                    lrc.lyrics[time_now] = SingleLineLyric(segments[i])
+                lrc.whole_contexts += lrc.lyrics[time_now].whole_context.replace(
+                    " ", ""
+                )
 
             elif tag_type == TagType.ID:
                 # 若为ID标签，载入信息字典中
