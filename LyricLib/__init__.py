@@ -19,15 +19,15 @@ from .main import *
 
 __version__ = "0.0.4"
 __all__ = [
-
+    #
     # 主类
     "Lyric",
-
+    #
     # 副类
     "TimeStamp",
     "SingleLineLyric",
     "LyricMetaInfo",
-    
+    #
     # 常量
     "LRC_ID_TAG2META_NAME",
     "STABLE_LRC_TIME_FORMAT_STYLE",
