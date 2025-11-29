@@ -1,18 +1,34 @@
-import re
+# -*- coding: utf-8 -*-
+
+"""
+词幕库下属子类
+"""
+
+"""
+版权所有 © 2022-2025 金羿ELS、Baby2016 及 thecasttim
+Copyright © 2022-2025 thecasttim & Baby2016 & Eilles
+
+开源相关声明请见 仓库根目录下的 License.md
+Terms & Conditions: License.md in the root directory
+"""
+
+# 睿乐组织 开发交流群 861684859
+# Email TriM-Organization@hotmail.com
+# 若需转载或借鉴 许可声明请查看仓库目录下的 License.md
+
+
 from dataclasses import dataclass
-from enum import Enum
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 
-from .constants import *
-from .exceptions import *
+from .exceptions import TimeTooPreciseError
+from .constants import HOUR, MINUTE, SECOND, MILLISECOND, CENTISECOND
+
+from .lrc.constants import LRC_ID_TAG2META_NAME, STABLE_LRC_TIME_FORMAT_STYLE
+from .lrc.exceptions import LrcDestroyedError, WordTagError
+
+from .lrc.utils import parse_lrc_time_tag
 
 
-class TagType(Enum):
-    """标签类型类"""
-
-    ID = 0  # ID标签
-    TIME = 1  # 时间戳标签
-    UNKNOWN = 2  # 未知标签
 
 
 @dataclass(init=False)
@@ -22,13 +38,13 @@ class TimeStamp:
     hours: int
     minutes: int
     seconds: int
-    microseconds: int
+    milliseconds: int
 
     def __init__(
         self,
-        hours: Union[float, int] = 0,
-        minutes: Union[float, int] = 0,
-        seconds: Union[float, int] = 0,
+        hour: Union[float, int] = 0,
+        min: Union[float, int] = 0,
+        sec: Union[float, int] = 0,
         ms: int = 0,
     ):
         """
@@ -36,22 +52,113 @@ class TimeStamp:
 
         Parameters
         ----------
-        hours, minutes, seconds, ms 正如其名
+        hour, min, sec, ms 正如其名
         分别是距离开始时的 时、分、秒、毫秒
         """
 
         if ms != int(ms):
             raise TimeTooPreciseError("毫秒不应为小数。")
 
-        microseconds = ms + seconds * 1000 + minutes * 60000 + hours * 360000
+        millisec = ms + sec * 1000 + min * 60000 + hour * 360000
 
-        self.microseconds = int(microseconds % 1000)
-        self.seconds = int(microseconds / 1000 % 60)
-        self.minutes = int(microseconds / 60000 % 60)
-        self.hours = int(microseconds / 360000)
+        self.milliseconds = int(millisec % 1000)
+        self.seconds = int(millisec / 1000 % 60)
+        self.minutes = int(millisec / 60000 % 60)
+        self.hours = int(millisec / 360000)
+
+    @property
+    def in_hours(self) -> float:
+        """以小时为单位的时间戳"""
+        return (
+            self.hours
+            + self.minutes / 60
+            + self.seconds / 360
+            + self.milliseconds / 360000
+        )
+
+    @property
+    def in_minutes(self) -> float:
+        """以分钟为单位的时间戳"""
+        return (
+            self.hours * 60
+            + self.minutes
+            + self.seconds / 60
+            + self.milliseconds / 60000
+        )
+
+    @property
+    def in_seconds(self) -> float:
+        """以秒为单位的时间戳"""
+        return (
+            self.hours * 360
+            + self.minutes * 60
+            + self.seconds
+            + self.milliseconds / 1000
+        )
+
+    @property
+    def in_milliseconds(self) -> int:
+        """以毫秒为单位的时间戳"""
+        return (
+            self.hours * 360000
+            + self.minutes * 60000
+            + self.seconds * 1000
+            + self.milliseconds
+        )
+
+    def __dict__(self) -> Dict[str, int]:
+        return {
+            HOUR: self.hours,
+            MINUTE: self.minutes,
+            SECOND: self.seconds,
+            MILLISECOND: self.milliseconds,
+        }
+
+    def __hash__(self) -> int:
+        return self.in_milliseconds
+
+    def __str__(self) -> str:
+        """
+        直接以最完整的格式输出字符串
+        """
+        return "{}:{}:{}.{}".format(
+            self.hours, self.minutes, self.seconds, self.milliseconds
+        )
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and (self.hours == other.hours)
+            and (self.minutes == other.minutes)
+            and (self.seconds == other.seconds)
+            and (self.milliseconds == other.milliseconds)
+        )
+
+    def __lt__(self, other) -> bool:
+        """
+        判小于
+        """
+        if self.hours < other.hours:
+            return True
+        elif self.minutes < other.minutes:
+            return True
+        elif self.seconds < other.seconds:
+            return True
+        elif self.milliseconds < other.milliseconds:
+            return True
+        return False
+
+    def __gt__(self, other) -> bool:
+        """
+        判大于
+        """
+        return other.__lt__(self)
+
+    def __add__(self, other) -> "TimeStamp":
+        return TimeStamp(ms=(self.in_milliseconds + other.in_milliseconds))
 
     @classmethod
-    def from_lrc_time_tag(cls, time_tag_str: str):
+    def from_lrc_timetag(cls, time_tag_str: str):
         """
         从Lrc歌词文件的时间标签读取时间戳
 
@@ -65,199 +172,66 @@ class TimeStamp:
         try:
             # print(time_tag_str)
             return cls(
-                *cls.parse_lrc_time_tag(time_tag_str.replace("[", "").replace("]", ""))
+                *parse_lrc_time_tag(time_tag_str.replace("[", "").replace("]", ""))
             )
         except TimeTooPreciseError:
-            raise LrcDestroyedError("时间标签出现错误: {}".format(time_tag_str), time_tag_str)
-
-    @staticmethod
-    def parse_lrc_time_tag(time_tag_str) -> Tuple[int, ...]:
-        """
-        将LRC文件的字符串格式的时间戳解析为 时、分、秒、毫秒
-
-        Parameters
-        ----------
-        time_tag_str: int
-            时间戳字符串
-
-        Returns
-        -------
-
-        tuple(int时, int分, int秒, int毫秒)
-        """
-
-        m = re.match(LRC_TIME_PATTERN, time_tag_str)
-        if m:
-            time_parts = m.groupdict()
-        else:
-            raise TimeTagError(time_tag_str)
-
-        # 毫秒
-        ms = 0
-        if time_parts["p4"] is not None:
-            # ".xxx秒" ---> 毫秒
-            ms = int(float(time_parts["p4"]) * 1000)
-
-        # 秒
-        s = 0
-        if time_parts["p3"] is not None:
-            s = int(time_parts["p3"])
-
-        # 小时与分钟
-        if time_parts["p2"] is None:
-            h = 0
-            if time_parts["p1"] is not None:
-                # <p1>xx:<p3>xx(<p4>.xx)形式( xx:xx(.xx) )
-                minute = int(time_parts["p1"][:-1])
-                if minute >= 60:
-                    h = minute // 60
-                    minute = minute % 60
-            else:
-                # <p3>xx(<p4>.xx)形式( xx(.xx) )
-                minute = 0
-        else:
-            h = int(time_parts["p1"][:-1])
-            minute = int(time_parts["p2"][:-1])
-
-        return h, minute, s, ms
-
-    @property
-    def get_hours(self) -> int:
-        """时间戳中的小时部分"""
-        return self.hours
-
-    @property
-    def in_hours(self) -> float:
-        """以小时为单位的时间戳"""
-        return (
-            self.hours
-            + self.minutes / 60
-            + self.seconds / 360
-            + self.microseconds / 360000
-        )
-
-    @property
-    def get_minutes(self) -> int:
-        """时间戳中的分钟部分"""
-        return self.minutes
-
-    @property
-    def in_minutes(self) -> float:
-        """以分钟为单位的时间戳"""
-        return (
-            self.hours * 60
-            + self.minutes
-            + self.seconds / 60
-            + self.microseconds / 60000
-        )
-
-    @property
-    def get_seconds(self) -> int:
-        """时间戳中的秒数部分"""
-        return self.seconds
-
-    @property
-    def in_seconds(self) -> float:
-        """以秒为单位的时间戳"""
-        return (
-            self.hours * 360
-            + self.minutes * 60
-            + self.seconds
-            + self.microseconds / 1000
-        )
-
-    @property
-    def get_microseconds(self) -> int:
-        """时间戳中的毫秒部分"""
-        return self.microseconds
-
-    @property
-    def in_microseconds(self) -> int:
-        """以毫秒为单位的时间戳"""
-        return (
-            self.hours * 360000
-            + self.minutes * 60000
-            + self.seconds * 1000
-            + self.microseconds
-        )
-
-    def __dict__(self) -> Dict[str, int]:
-        """由此库定义的歌词时间戳中的所有表示时间的表达式样式所对应的值"""
-        return {
-            "hh": self.get_hours,
-            "mm": self.get_minutes,
-            "ss": self.get_seconds,
-            "xx": int(self.microseconds / 10),
-            "fff": self.microseconds,
-        }
-
-    def __hash__(self) -> int:
-        return hash(
-            "{}{}{}{}".format(
-                self.get_hours,
-                self.get_minutes,
-                self.get_seconds,
-                self.get_microseconds,
+            raise LrcDestroyedError(
+                "时间标签出现错误: {}".format(time_tag_str), time_tag_str
             )
-        )
 
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-        return self.__str__() == other.__str__()
-
-    def __str__(self) -> str:
-        """
-        直接以最完整的格式输出字符串
-        """
-        return "{}:{}:{}.{}".format(
-            self.get_hours, self.get_minutes, self.get_seconds, self.get_microseconds
-        )
-
-    def __lt__(self, other) -> bool:
-        """
-        判小于
-        """
-        return self.in_microseconds < other.in_microseconds
-
-    def __cmp__(self, other) -> int:
-        """
-        比较
-        """
-        return self.in_microseconds - other.in_microseconds
-
-    def to_lrc_str(self, format_style: str = STABLE_LRC_TIME_FORMAT_STYLE) -> str:
+    def to_lrc_timetag(self, format_style: str = STABLE_LRC_TIME_FORMAT_STYLE) -> str:
         """
         以特定样式的LRC格式的时间标签返回字符串
         """
-        now_exp = self.__dict__()
-        rep_exp = {}
-        for expression in now_exp.keys():
-            if expression in format_style:
-                rep_exp[expression] = "{:0>2d}".format(now_exp[expression])
 
-        return format_style.format(**rep_exp)
-
+        return format_style.format(
+            **{
+                unit: value
+                for unit, value in {
+                    **self.__dict__(),
+                    **{CENTISECOND: self.milliseconds / 10},
+                }.items()
+                if unit in format_style
+            }
+        )
 
 @dataclass(init=False)
-class SingleLineLyric:
-    """一句歌词"""
+class SingleLine:
+    """一句词"""
 
-    whole_context: str
-    word_extension: Dict[TimeStamp, str]
+    context: str
+    duration: Optional[TimeStamp]
+    word_extension: Optional[Dict[TimeStamp, str]]
 
-    def __init__(self, sentence: str, extension: Dict[TimeStamp, str] = {}):
+    def __init__(
+        self,
+        sentence: str,
+        duration: Optional[TimeStamp] = None,
+        extension: Optional[Dict[TimeStamp, str]] = None,
+    ):
         """建立一句歌词"""
-        self.whole_context = sentence
+        self.context = sentence
+        self.duration = duration
         self.word_extension = extension
+
+    def __str__(self) -> str:
+        if self.word_extension:
+            return "".join(
+                [
+                    r"<{}>{}".format(time.to_lrc_timetag(), word)
+                    for time, word in self.word_extension.items()
+                ]
+            )
+        else:
+            return self.context
 
     @classmethod
     def from_lrc_str_dict(cls, sentence: str, **extension):
         """从LRC时间标签字符串而组成的字典中获取附加信息"""
         word_extension = {}
         for time_str, word in extension.items():
-            word_extension[TimeStamp.from_lrc_time_tag(time_tag_str=time_str)] = word
-        return cls(sentence, word_extension)
+            word_extension[TimeStamp.from_lrc_timetag(time_tag_str=time_str)] = word
+        return cls(sentence, extension=word_extension)
 
     @classmethod
     def from_lrc_str_list(
@@ -275,21 +249,10 @@ class SingleLineLyric:
             # print("=====")
             # print(time_str_list[i],TimeStamp.from_lrc_time_tag(time_str_list[i]),word_list[i])
             word_extension[
-                TimeStamp.from_lrc_time_tag(time_tag_str=time_str_list[i])
+                TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i])
             ] = word_list[i]
             # print("=====")
-        return cls(sentence, word_extension)
-
-    def __str__(self) -> str:
-        if self.word_extension:
-            return "".join(
-                [
-                    r"<{}>{}".format(time.to_lrc_str(), word)
-                    for time, word in self.word_extension.items()
-                ]
-            )
-        else:
-            return self.whole_context
+        return cls(sentence, extension=word_extension)
 
     def to_lrc_str(self, format_style: str = r"{mm}:{ss}.{xx}") -> str:
         """
@@ -298,12 +261,14 @@ class SingleLineLyric:
         if self.word_extension:
             return "".join(
                 [
-                    r"<{}>{}".format(time.to_lrc_str(format_style=format_style), word)
+                    r"<{}>{}".format(
+                        time.to_lrc_timetag(format_style=format_style), word
+                    )
                     for time, word in self.word_extension.items()
                 ]
             )
         else:
-            return self.whole_context
+            return self.context
 
 
 @dataclass(init=False)
@@ -336,6 +301,7 @@ class LyricMetaInfo:
         Editor: str = "",
         Version: str = "",
         Offset: str = "",
+        Other: Dict[str, str] = {},
     ) -> None:
         """建立一歌之元"""
         self.Singer = Singer
@@ -349,6 +315,7 @@ class LyricMetaInfo:
         self.Editor = Editor
         self.Version = Version
         self.Offset = Offset
+        self.Other = Other
 
     def __dict__(self):
         result = {

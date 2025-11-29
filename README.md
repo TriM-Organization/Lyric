@@ -1,6 +1,6 @@
-<h1 align="center">歌词 LyricLib</h1>
+<h1 align="center">词幕 LyricLib</h1>
 
-<h3 align="center">歌词的处理库</h3>
+<h3 align="center">歌词字幕处理库</h3>
 
 <p align="center">
 <img src="https://forthebadge.com/images/badges/built-with-love.svg">
@@ -8,6 +8,7 @@
 
 
 [![][Bilibili: 金羿ELS]](https://space.bilibili.com/397369002/)
+[![][Bilibili: Baby_2016]](https://space.bilibili.com/499929312/)
 [![CodeStyle: black]](https://github.com/psf/black)
 [![][python]](https://www.python.org/)
 [![][license]](LICENSE)
@@ -19,7 +20,7 @@
 
 ## 介绍🚀
 
-LyricLib是一个简单的歌词处理库
+词幕（英语：LyricLib）是一个简单的歌词字幕文件处理库
 
 欢迎加群：[861684859](https://jq.qq.com/?_wv=1027&k=hpeRxrYr)
 
@@ -45,6 +46,7 @@ LyricLib是一个简单的歌词处理库
 + https://github.com/doakey3/pylrc/blob/master/pylrc/parser.py
 
 [Bilibili: 金羿ELS]: https://img.shields.io/badge/Bilibili-%E5%87%8C%E4%BA%91%E9%87%91%E7%BE%BF-00A1E7?style=for-the-badge
+[Bilibili: Baby_2016]: https://img.shields.io/badge/Bilibili-Baby_2016-00A1E7?style=for-the-badge
 [CodeStyle: black]: https://img.shields.io/badge/code%20style-black-121110.svg?style=for-the-badge
 [python]: https://img.shields.io/badge/python-3.6-AB70FF?style=for-the-badge
 [release]: https://img.shields.io/github/v/release/EillesWan/Musicreater?style=for-the-badge

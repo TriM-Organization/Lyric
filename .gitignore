@@ -12,6 +12,7 @@ __pycache__/
 *.json
 *.lrc
 /logs/
+/fairy_subtitle/
 
 # C extensions
 *.so

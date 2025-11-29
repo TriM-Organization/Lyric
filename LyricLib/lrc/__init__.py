@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-常量与数值性内容
+针对 LRC 歌词文件类型的处理
 """
 
 """
@@ -16,19 +16,4 @@ Terms & Conditions: License.md in the root directory
 # Email TriM-Organization@hotmail.com
 # 若需转载或借鉴 许可声明请查看仓库目录下的 License.md
 
-
-HOUR = "hours"
-"""时"""
-
-MINUTE = "minutes"
-"""分"""
-
-SECOND = "seconds"
-"""秒"""
-
-CENTISECOND = "centiseconds"
-"""厘秒"""
-
-MILLISECOND = "milliseconds"
-"""毫秒"""
 

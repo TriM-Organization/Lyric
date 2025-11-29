@@ -1,7 +1,7 @@
 import threading
 import time
 
-from LyricLib import LRC_ID_TAG2META_NAME, Lyric, SingleLineLyric, TimeStamp
+from LyricLib import LRC_ID_TAG2META_NAME, Lyric, SingleLine, TimeStamp
 
 lyric = Lyric()
 
@@ -29,7 +29,7 @@ start_time = time.time()
 for line in lines:
     input(line)
     t = TimeStamp(seconds=time.time() - start_time)
-    lyric.lyrics[t] = SingleLineLyric(line)
+    lyric.lyrics[t] = SingleLine(line)
     print(t)
 
 with open(

@@ -2,8 +2,10 @@
 # 开源项目之使用声明
 
 此项目中部分代码由 thecasttim 的 [lrc-parser](https://gitee.com/thecasttim/lrc-parser) 项目改编而来
+Part of this project's some code is adapted from the project [lrc-parser](https://gitee.com/thecasttim/lrc-parser) of thecasttim
 
-以下是源项目的授权协议：
+以下是原项目的授权协议：
+Below is the original project's license
 
 ```
 MIT License

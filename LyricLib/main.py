@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
-"""歌词的处理工具
+"""
+歌词的处理工具
 
 此部分的代码由 thecasttim 的 [lrc-parser](https://gitee.com/thecasttim/lrc-parser) 项目改编而来
 
@@ -26,27 +27,41 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-继承协议：
-版权所有© 2022-2023 全体 LyricLib 作者 及 thecasttim
-Copyright 2022-2023 thecasttim and all the developers of LyricLib
+本项目著作权声明：
+    版权所有 © 2022-2025 金羿ELS、Baby2016 及 thecasttim
+    Copyright © 2022-2025 thecasttim & Baby2016 & Eilles
 
-开源相关声明请见 ../License.md
-Terms & Conditions: ../License.md
+    开源相关声明请见 仓库根目录下的 License.md
+    Terms & Conditions: License.md in the root directory
 """
 
+import re
 import codecs
-from typing import Any, TextIO
+from typing import Any, TextIO, Dict
+from dataclasses import dataclass
 
-from .constants import *
-from .exceptions import *
-from .subclass import *
+from .subclass import TimeStamp, SingleLine, LyricMetaInfo
+
+from .lrc.constants import (
+    LRC_TAG_PATTERN,
+    LRC_ID_TAG2META_NAME,
+    STABLE_LRC_TIME_FORMAT_STYLE,
+)
+from .lrc.exceptions import LrcDestroyedError
+from .lrc.utils import (
+    TagType,
+    is_lrc_segment_enhanced,
+    is_lrc_tag_valid,
+    parse_lrc_enhanced_segment,
+    get_lrc_tag_type,
+)
 
 
 @dataclass(init=False)
 class Lyric:
     """歌词的操作以及数据类"""
 
-    lyrics: Dict[TimeStamp, SingleLineLyric]
+    lyrics: Dict[TimeStamp, SingleLine]
     """歌词字典，以一个时间戳对应一个单行歌词类"""
 
     meta_info: LyricMetaInfo
@@ -60,7 +75,7 @@ class Lyric:
 
     def __init__(
         self,
-        lyrics: Dict[TimeStamp, SingleLineLyric] = {},
+        lyrics: Dict[TimeStamp, SingleLine] = {},
         meta_info: LyricMetaInfo = LyricMetaInfo(),
     ):
         """
@@ -89,7 +104,7 @@ class Lyric:
         lrc = cls()
 
         # 检查[]<>等标签括号是否匹配
-        if not lrc.is_tags_valid(lrc_raw_text):
+        if not is_lrc_tag_valid(lrc_raw_text):
             raise LrcDestroyedError("标签括号未闭合")
 
         # 提取所有标签
@@ -110,25 +125,23 @@ class Lyric:
 
         # 逐段解析标签及其内容
         for i in range(0, tags_num):
-            tag_type = lrc.get_tag_type(tags[i])
+            tag_type = get_lrc_tag_type(tags[i])
 
             # 判断标签是时间标签还是ID标签, 分别处理
             if tag_type == TagType.TIME:
                 # 若为时间标签，载入歌词
-                time_now = TimeStamp.from_lrc_time_tag(tags[i])
-                if lrc.is_enhanced(segments[i]):
+                time_now = TimeStamp.from_lrc_timetag(tags[i])
+                if is_lrc_segment_enhanced(segments[i]):
                     # 增强格式（字词标签处理）
-                    timestamps, parts = lrc.parse_enhanced_lrc(segments[i])
+                    timestamps, parts = parse_lrc_enhanced_segment(segments[i])
 
-                    lrc.lyrics[time_now] = SingleLineLyric.from_lrc_str_list(
+                    lrc.lyrics[time_now] = SingleLine.from_lrc_str_list(
                         "".join(parts), timestamps, parts[1:]
                     )
                 else:
                     # 普通格式（单句标签）
-                    lrc.lyrics[time_now] = SingleLineLyric(segments[i])
-                lrc.whole_contexts += lrc.lyrics[time_now].whole_context.replace(
-                    " ", ""
-                )
+                    lrc.lyrics[time_now] = SingleLine(segments[i])
+                lrc.whole_contexts += lrc.lyrics[time_now].context.replace(" ", "")
 
             elif tag_type == TagType.ID:
                 # 若为ID标签，载入信息字典中
@@ -148,73 +161,6 @@ class Lyric:
                 lrc.extra_info[tags[i]] = segments[i]
 
         return lrc
-
-    @staticmethod
-    def is_tags_valid(text):
-        """
-        检查标签括号是否匹配
-        :param text: lrc歌词文件完整内容
-        :return: 如果[]与<>匹配则返回True，否则返回False
-        """
-        if text is None:
-            return True
-
-        res = list()
-        pair = {"]": "[", ">": "<"}
-        for c in text:
-            if c == "]" or c == ">":
-                if not res or res[-1] != pair[c]:
-                    return False
-                res.pop()
-            elif c == "[" or c == "<":
-                res.append(c)
-
-        return len(res) == 0
-
-    @staticmethod
-    def get_tag_type(tag):
-        """
-        获取标签类型
-        :param tag: 标签
-        :return: tag_type: 标签类型
-        """
-        # 时间戳标签匹配模式
-        time_tag_pattern = LRC_TIME_PATTERN
-        # ID标签匹配模式
-        id_tag_pattern = r"[a-zA-Z]*:.*"
-
-        if re.match(time_tag_pattern, tag):
-            return TagType.TIME
-        elif re.match(id_tag_pattern, tag):
-            return TagType.ID
-        else:
-            return TagType.UNKNOWN
-
-    @staticmethod
-    def is_enhanced(segment):
-        """
-        判断是否是增强格式
-        :param segment: 一段歌词
-        :return: True, 包含增强格式的时间戳, False, 不含增强格式的时间戳
-        """
-        pattern = LRC_ENHANCE_TIME_PATTERN_N
-        m = re.search(pattern, segment)
-        if m is not None:
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def parse_enhanced_lrc(segment):
-        """
-        解析增强格式的歌词
-        :param segment: 增强格式的歌词
-        :return: timestamps: 时间戳列表, 由时间戳分割的各部分构成的列表
-        """
-        pattern = LRC_ENHANCE_TIME_PATTERN_N
-        timestamps = [time[1:-1] for time in re.findall(pattern, segment)]
-        parts = re.split(pattern, segment)
-        return timestamps, parts
 
     @property
     def get_ids(self):
@@ -241,7 +187,7 @@ class Lyric:
         for time, sentense in self.lyrics.items():
             fdist.write(
                 "[{}]{}\n".format(
-                    time.to_lrc_str(format_style=time_format_style),
+                    time.to_lrc_timetag(format_style=time_format_style),
                     sentense.to_lrc_str(format_style=time_format_style),
                 )
             )

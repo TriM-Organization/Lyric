@@ -1,0 +1,84 @@
+[project]
+    name            = "LyricLib"
+    dynamic         = ["version"]
+    requires-python = ">= 3.6, < 4.0"
+
+    authors = [
+        { name = "金羿Eilles" },
+        { name = "baby2016", email = "2185823427@qq.com" },
+    ]
+    maintainers = [
+        { name = "金羿Eilles" },
+        { name = "玉衡Alioth" },
+        { name = "睿乐组织 TriMO", email = "TriM-Organization@hotmail.com" },
+    ]
+
+    description = "字幕/歌词处理库 A library for processing lyrics/subtitles"
+    readme      = { file = "README.md", content-type = "text/markdown" }
+    license     = { file = "LICENSE.md" }
+
+    keywords = ["lyric", "subtitle", "lrc", "srt"]
+    classifiers = [
+        "Intended Audience :: Developers",
+        "Natural Language :: Chinese (Simplified)",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
+        "Topic :: Software Development :: Libraries",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+    ]
+
+
+[project.optional-dependencies]
+    dev = [
+        "twine",
+        "rich",
+    ]
+
+
+[project.urls]
+    # Homepage = "https://example.com"
+    # Documentation = "https://readthedocs.org"
+    Repository        = "https://gitee.com/TriM-Organization/Lyric"
+    Issues            = "https://gitee.com/TriM-Organization/Lyric/issues"
+    Mirror-Repository = "https://github.com/TriM-Organization/Lyric"
+    Mirror-Issues     = "https://github.com/TriM-Organization/Lyric/issues"
+
+
+[build-system]
+    requires      = ["pdm-backend"]
+    build-backend = "pdm.backend"
+
+# https://backend.pdm-project.org/build_config/#build-configurations
+[tool.pdm.build]
+    source-includes = [
+        "README_EN.md",
+        "README.md",
+        "LICENSE.md",
+        "./LyricLib/LICENSE(lrc-parser).md"
+    ]
+    excludes = [
+        "examples/",
+        "fairySubtitle/",
+        "docs/",
+        "./clean_update.py",
+        "./*.lrc",
+        "./*.wav",
+        "./*.srt",
+        "./*.txt.py",
+    ]
+
+
+[tool.pdm.version]
+    source = "file"
+    path   = "LyricLib/__init__.py"
+
+
+[tool.pyright]
+    typeCheckingMode = "basic"
+
