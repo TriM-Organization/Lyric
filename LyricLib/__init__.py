@@ -16,7 +16,7 @@ Terms & Conditions: License.md in the root directory
 # 若需转载或借鉴 许可声明请查看仓库目录下的 License.md
 
 from .main import Lyric
-from .subclass import TimeStamp, SingleLine, LyricMetaInfo
+from .subclass import TimeStamp, SingleLine, MetaInfo
 from .lrc.constants import (
     LRC_ID_TAG2META_NAME,
     STABLE_LRC_TIME_FORMAT_STYLE,
@@ -35,7 +35,7 @@ __all__ = [
     # 副类
     "TimeStamp",
     "SingleLine",
-    "LyricMetaInfo",
+    "MetaInfo",
     #
     # 常量
     "LRC_ID_TAG2META_NAME",

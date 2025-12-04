@@ -40,7 +40,7 @@ import codecs
 from typing import Any, TextIO, Dict
 from dataclasses import dataclass
 
-from .subclass import TimeStamp, SingleLine, LyricMetaInfo
+from .subclass import TimeStamp, SingleLine, MetaInfo
 
 from .lrc.constants import (
     LRC_TAG_PATTERN,
@@ -64,7 +64,7 @@ class Lyric:
     lyrics: Dict[TimeStamp, SingleLine]
     """歌词字典，以一个时间戳对应一个单行歌词类"""
 
-    meta_info: LyricMetaInfo
+    meta_info: MetaInfo
     """曲目基础信息"""
 
     extra_info: Dict[str, Any]
@@ -76,7 +76,7 @@ class Lyric:
     def __init__(
         self,
         lyrics: Dict[TimeStamp, SingleLine] = {},
-        meta_info: LyricMetaInfo = LyricMetaInfo(),
+        meta_info: MetaInfo = MetaInfo(),
     ):
         """
         建立一个歌词对象

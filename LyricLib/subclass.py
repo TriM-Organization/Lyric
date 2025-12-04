@@ -17,8 +17,12 @@ Terms & Conditions: License.md in the root directory
 # 若需转载或借鉴 许可声明请查看仓库目录下的 License.md
 
 
+from enum import Enum
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional, Literal
+
+from PIL import ImageColor, Image, ImageFont
+from datetime import time, timedelta
 
 from .exceptions import TimeTooPreciseError
 from .constants import HOUR, MINUTE, SECOND, MILLISECOND, CENTISECOND
@@ -35,10 +39,10 @@ from .lrc.utils import parse_lrc_time_tag
 class TimeStamp:
     """时间戳类"""
 
-    hours: int
-    minutes: int
-    seconds: int
-    milliseconds: int
+    _hours: int
+    _minutes: int
+    _seconds: int
+    _milliseconds: int
 
     def __init__(
         self,
@@ -61,57 +65,82 @@ class TimeStamp:
 
         millisec = ms + sec * 1000 + min * 60000 + hour * 360000
 
-        self.milliseconds = int(millisec % 1000)
-        self.seconds = int(millisec / 1000 % 60)
-        self.minutes = int(millisec / 60000 % 60)
-        self.hours = int(millisec / 360000)
+        self._milliseconds = int(millisec % 1000)
+        self._seconds = int(millisec / 1000 % 60)
+        self._minutes = int(millisec / 60000 % 60)
+        self._hours = int(millisec / 360000)
+
+    # 只读属性
+    @property
+    def hours(self):
+        """时"""
+        return self._hours
+
+    @property
+    def minutes(self):
+        """分"""
+        return self._minutes
+
+    @property
+    def seconds(self):
+        """秒"""
+        return self._seconds
+
+    @property
+    def milliseconds(self):
+        """毫秒"""
+        return self._milliseconds
+
 
     @property
     def in_hours(self) -> float:
         """以小时为单位的时间戳"""
         return (
-            self.hours
-            + self.minutes / 60
-            + self.seconds / 360
-            + self.milliseconds / 360000
+            self._hours
+            + self._minutes / 60
+            + self._seconds / 360
+            + self._milliseconds / 360000
         )
 
     @property
     def in_minutes(self) -> float:
         """以分钟为单位的时间戳"""
         return (
-            self.hours * 60
-            + self.minutes
-            + self.seconds / 60
-            + self.milliseconds / 60000
+            self._hours * 60
+            + self._minutes
+            + self._seconds / 60
+            + self._milliseconds / 60000
         )
 
     @property
     def in_seconds(self) -> float:
         """以秒为单位的时间戳"""
         return (
-            self.hours * 360
-            + self.minutes * 60
-            + self.seconds
-            + self.milliseconds / 1000
+            self._hours * 360
+            + self._minutes * 60
+            + self._seconds
+            + self._milliseconds / 1000
         )
 
     @property
     def in_milliseconds(self) -> int:
         """以毫秒为单位的时间戳"""
         return (
-            self.hours * 360000
-            + self.minutes * 60000
-            + self.seconds * 1000
-            + self.milliseconds
+            self._hours * 360000
+            + self._minutes * 60000
+            + self._seconds * 1000
+            + self._milliseconds
         )
+
+    def __tuple__(self) -> Tuple[int, int, int, int]:
+        return (self._hours, self._minutes, self._seconds, self._milliseconds)
 
     def __dict__(self) -> Dict[str, int]:
         return {
-            HOUR: self.hours,
-            MINUTE: self.minutes,
-            SECOND: self.seconds,
-            MILLISECOND: self.milliseconds,
+            HOUR: self._hours,
+            MINUTE: self._minutes,
+            SECOND: self._seconds,
+            MILLISECOND: self._milliseconds,
         }
 
     def __hash__(self) -> int:
@@ -122,32 +151,34 @@ class TimeStamp:
         直接以最完整的格式输出字符串
         """
         return "{}:{}:{}.{}".format(
-            self.hours, self.minutes, self.seconds, self.milliseconds
+            self._hours, self._minutes, self._seconds, self._milliseconds
         )
 
     def __eq__(self, other) -> bool:
         return (
-            isinstance(other, self.__class__)
-            and (self.hours == other.hours)
-            and (self.minutes == other.minutes)
-            and (self.seconds == other.seconds)
-            and (self.milliseconds == other.milliseconds)
+            isinstance(other, TimeStamp)
+            and (self._hours == other._hours)
+            and (self._minutes == other._minutes)
+            and (self._seconds == other._seconds)
+            and (self._milliseconds == other._milliseconds)
         )
 
     def __lt__(self, other) -> bool:
         """
         判小于
         """
-        if self.hours < other.hours:
-            return True
-        elif self.minutes < other.minutes:
-            return True
-        elif self.seconds < other.seconds:
-            return True
-        elif self.milliseconds < other.milliseconds:
-            return True
-        return False
-
+        if isinstance(other, TimeStamp):
+            if self._hours < other.hours:
+                return True
+            elif self._minutes < other.minutes:
+                return True
+            elif self._seconds < other.seconds:
+                return True
+            elif self._milliseconds < other.milliseconds:
+                return True
+            return False
+        else:
+            return NotImplemented
     def __gt__(self, other) -> bool:
         """
         判大于
@@ -155,7 +186,19 @@ class TimeStamp:
         return other.__lt__(self)
 
     def __add__(self, other) -> "TimeStamp":
-        return TimeStamp(ms=(self.in_milliseconds + other.in_milliseconds))
+        if isinstance(other, TimeStamp):
+            return TimeStamp(hour=self.hours + other.hours,                             min=self.minutes + other.minutes,sec=self.seconds + other.seconds,                             ms=self.milliseconds + other.milliseconds)
+        else:
+            return NotImplemented
+
+
+    # 打包支持 Pickle
+
+    def _getstate(self):
+        return self.__tuple__()
+
+    def __reduce__(self):
+        return (self.__class__, self._getstate())
 
     @classmethod
     def from_lrc_timetag(cls, time_tag_str: str):
@@ -189,17 +232,75 @@ class TimeStamp:
                 unit: value
                 for unit, value in {
                     **self.__dict__(),
-                    **{CENTISECOND: self.milliseconds / 10},
+                    **{CENTISECOND: self._milliseconds / 10},
                 }.items()
                 if unit in format_style
             }
         )
 
+
+class LocationAnchor(Enum):
+    """字幕位置锚点"""
+
+    # 第一个值是横轴位置，第二是纵轴位置
+    TOP_LEFT = (-1, -1)
+    TOP_CENTER = (0, -1)
+    TOP_RIGHT = (1, -1)
+    MIDDLE_LEFT = (-1, 0)
+    MIDDLE_CENTER = (0, 0)
+    MIDDLE_RIGHT = (1, 0)
+    BOTTOM_LEFT = (-1, 1)
+    BOTTOM_CENTER = (0, 1)
+    BOTTOM_RIGHT = (1, 1)
+
+    def __tuple__(self) -> Tuple[Literal[-1,0,1], Literal[-1,0,1]]:
+        return self.value
+
+    # 打包支持 Pickle
+
+    def _getstate(self):
+        return self.__tuple__()
+
+    def __reduce__(self):
+        return (self.__class__, self._getstate())
+
+
+@dataclass(init=False)
+class LineLocation:
+    """歌词位置"""
+
+    archer: LocationAnchor
+    """定位点"""
+    offset: Tuple[int, int]
+    """偏移量，单位屏幕百分比"""
+
+
+@dataclass(init=False)
+class StyledLine:
+    """字体样式"""
+
+    font_name: str
+    font_size: int
+    bold: bool
+    italic: bool
+    underline: int
+    outline: int
+    foreground_colour: str
+    background_colour: str
+    opacity: str
+    context: str
+
+
+
+
+
 @dataclass(init=False)
 class SingleLine:
-    """一句词"""
+    """一句词，这里的 Line 指的是台词"""
 
-    context: str
+
+    location: LineLocation
+    context: List[StyledLine]
     duration: Optional[TimeStamp]
     word_extension: Optional[Dict[TimeStamp, str]]
 
@@ -272,7 +373,7 @@ class SingleLine:
 
 
 @dataclass(init=False)
-class LyricMetaInfo:
+class MetaInfo:
     """歌词元信息"""
 
     Singer: str
