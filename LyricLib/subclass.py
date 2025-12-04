@@ -33,8 +33,6 @@ from .lrc.exceptions import LrcDestroyedError, WordTagError
 from .lrc.utils import parse_lrc_time_tag
 
 
-
-
 @dataclass(init=False)
 class TimeStamp:
     """时间戳类"""
@@ -90,7 +88,6 @@ class TimeStamp:
     def milliseconds(self):
         """毫秒"""
         return self._milliseconds
-
 
     @property
     def in_hours(self) -> float:
@@ -179,6 +176,7 @@ class TimeStamp:
             return False
         else:
             return NotImplemented
+
     def __gt__(self, other) -> bool:
         """
         判大于
@@ -187,10 +185,14 @@ class TimeStamp:
 
     def __add__(self, other) -> "TimeStamp":
         if isinstance(other, TimeStamp):
-            return TimeStamp(hour=self.hours + other.hours,                             min=self.minutes + other.minutes,sec=self.seconds + other.seconds,                             ms=self.milliseconds + other.milliseconds)
+            return TimeStamp(
+                hour=self.hours + other.hours,
+                min=self.minutes + other.minutes,
+                sec=self.seconds + other.seconds,
+                ms=self.milliseconds + other.milliseconds,
+            )
         else:
             return NotImplemented
-
 
     # 打包支持 Pickle
 
@@ -253,7 +255,10 @@ class LocationAnchor(Enum):
     BOTTOM_CENTER = (0, 1)
     BOTTOM_RIGHT = (1, 1)
 
-    def __tuple__(self) -> Tuple[Literal[-1,0,1], Literal[-1,0,1]]:
+    def __dict__(self) -> Dict[str, Literal[-1, 0, 1]]:
+        return {"x-anchor": self.value[0], "y-anchor": self.value[1]}
+
+    def __tuple__(self) -> Tuple[Literal[-1, 0, 1], Literal[-1, 0, 1]]:
         return self.value
 
     # 打包支持 Pickle
@@ -274,30 +279,232 @@ class LineLocation:
     offset: Tuple[int, int]
     """偏移量，单位屏幕百分比"""
 
+    def __init__(
+        self, archer: Union[LocationAnchor, Tuple[int, int]], offset: Tuple[int, int]
+    ):
+        """创建一个歌词行位置
 
-@dataclass(init=False)
-class StyledLine:
-    """字体样式"""
+        Parameters
+        ----------
+        archer: LocationAnchor
+            定位点位置
+        offset: Tuple[int, int]
+            偏移量，屏幕百分比
+        """
+        self.archer = (
+            archer if isinstance(archer, LocationAnchor) else LocationAnchor(archer)
+        )
+        self.offset = offset
 
-    font_name: str
-    font_size: int
-    bold: bool
-    italic: bool
-    underline: int
-    outline: int
-    foreground_colour: str
-    background_colour: str
-    opacity: str
-    context: str
+    def __dict__(self) -> Dict[str, Union[LocationAnchor, Tuple[int, int]]]:
+        return {"archer": self.archer, "offset": self.offset}
+
+    def __tuple__(self) -> Tuple[LocationAnchor, Tuple[int, int]]:
+        return self.archer, self.offset
+
+    # 打包支持 Pickle
+    def _getstate(self):
+        return self.__tuple__()
+
+    def __reduce__(self):
+        return (self.__class__, self._getstate())
 
 
+
+
+class StyledString(str):
+    """带样式的文本内容"""
+
+    font: str
+    """字体名称"""
+    size: int
+    """字体大小"""
+    
+    _bold: bool
+    """是否加粗"""
+    _italic: bool
+    """是否斜体"""
+    _underline: bool
+    """是否下划线"""
+    _strikethrough: bool
+    """是否删除线"""
+    _colour: Tuple[int, int, int, int]
+    """字体颜色"""
+
+    _outline: Tuple[int, Tuple[int, int, int, int]]
+    """描边样式（宽度、颜色）"""
+
+    _background_cover: Tuple[int, int, int, int]
+    """背景填充颜色"""
+
+    def __new__(
+        cls,
+        line_text: str = "",
+
+        is_bold: bool = False,
+        is_italic: bool = False,
+        is_underline: bool = False,
+        is_strikethrough: bool = False,
+        text_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (255, 255, 255, 255),
+
+        outline_px: int = 0,
+        outline_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (0, 0, 0, 0),
+
+        background_cover_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (0, 0, 0, 0),
+
+        font_name: str = "",
+        font_size: int = -1,
+    ):
+        """创建一个样式化字符串
+
+        Parameters
+        ----------
+        line_text: str
+            歌词行内容
+        is_bold: bool
+            是否加粗
+        is_italic: bool
+            是否斜体
+        is_underline: bool
+            是否下划线
+        is_strikethrough: bool
+            是否删除线
+        text_colour: str | Tuple[int, int, int] | Tuple[int, int, int, int]
+            文字颜色（可含透明度，RGBA顺序）
+        outline_px: int
+            描边宽度
+        outline_colour: str | Tuple[int, int, int] | Tuple[int, int, int, int]
+            描边颜色（可含透明度，RGBA顺序）
+        background_cover_colour: str | Tuple[int, int, int] | Tuple[int, int, int, int]
+            背景填充颜色（可含透明度，RGBA顺序）
+        font_name: str
+            字体名称
+        font_size: int
+            字体大小
+        """
+        instance = super().__new__(cls, line_text)
+
+        instance.font = font_name
+        instance.size = font_size
+
+        instance._bold = is_bold
+        instance._italic = is_italic
+        instance._underline = is_underline
+        instance._strikethrough = is_strikethrough
+
+        text_colour = ImageColor.getrgb(text_colour) if isinstance(text_colour, str) else text_colour
+        instance._colour = text_colour if len(text_colour) == 4 else text_colour + (255,)
+
+        outline_colour = ImageColor.getrgb(outline_colour) if isinstance(outline_colour, str) else outline_colour
+        instance._outline = (outline_px, outline_colour if len(outline_colour) == 4 else outline_colour + (255,))
+
+        background_cover_colour = ImageColor.getrgb(background_cover_colour) if isinstance(background_cover_colour, str) else background_cover_colour
+        instance._background_cover = background_cover_colour if len(background_cover_colour) == 4 else background_cover_colour + (255,)
+        
+        return instance
+
+    def copy(self) -> "StyledLine":
+        """复制样式"""
+        return StyledLine(
+            line_text=str(self),
+        )
+
+    def bold(self) -> "StyledLine":
+        """是否加粗"""
+        return self
+
+    def set_bold(self, is_bold: bool):
+        """设置加粗
+
+        Parameters
+        ----------
+        is_bold: bool
+            是否加粗
+        """
+        self._bold = is_bold
+
+    @property
+    def italic(self) -> bool:
+        """是否斜体"""
+        return self._italic
+
+    def set_italic(self, is_italic: bool):
+        """设置斜体
+
+        Parameters
+        ----------
+        is_italic: bool
+            是否斜体
+        """
+        self._italic = is_italic
+
+    @property
+    def underline(self) -> bool:
+        """是否下划线"""
+        return self._underline
+
+    def set_underline(self, is_underline: bool):
+        """设置下划线
+
+        Parameters
+        ----------
+        is_underline: bool
+            是否下划线
+        """
+        self._underline = is_underline
+
+    @property
+    def strikethrough(self) -> bool:
+        """是否删除线"""
+        return self._strikethrough
+
+    def set_strikethrough(self, is_strikethrough: bool):
+        """设置删除线
+
+        Parameters
+        ----------
+        is_strikethrough: bool
+            是否删除线
+        """
+        self._strikethrough = is_strikethrough
+
+    @property
+    def text_colour(self) -> Tuple[int, int, int, int]:
+        """文字颜色"""
+        return self._colour
+
+    def set_text_colour(self, text_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]]):
+        """设置文字颜色
+
+        Parameters
+        ----------
+        text_colour: str | Tuple[int, int, int] | Tuple[int, int, int, int]
+            文字颜色（可含透明度，RGBA顺序）
+        """
+        text_colour = ImageColor.getrgb(text_colour) if isinstance(text_colour, str) else text_colour
+        self._colour = text_colour if len(text_colour) == 4 else text_colour + (255,)
+
+
+    @property
+    def outline_size(self) -> int:
+        """描边宽度"""
+        return self._outline[0]
+    
+    @property
+    def outline_colour(self) -> Tuple[int, int, int, int]:
+        """描边颜色"""
+        return self._outline[1]
+
+    @property
+    def background_cover(self) -> Tuple[int, int, int, int]:
+        """背景填充颜色"""
+        return self._background_cover
 
 
 
 @dataclass(init=False)
 class SingleLine:
     """一句词，这里的 Line 指的是台词"""
-
 
     location: LineLocation
     context: List[StyledLine]
