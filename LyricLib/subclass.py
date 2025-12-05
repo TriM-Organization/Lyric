@@ -19,11 +19,13 @@ Terms & Conditions: License.md in the root directory
 
 from enum import Enum
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Union, Optional, Literal
+from typing import Dict, List, Tuple, Union, Optional, Literal, Callable, Any, Pattern
 
+import re
 from PIL import ImageColor, Image, ImageFont
 from datetime import time, timedelta
 
+from .utils import _normalize_color
 from .exceptions import TimeTooPreciseError
 from .constants import HOUR, MINUTE, SECOND, MILLISECOND, CENTISECOND
 
@@ -310,16 +312,14 @@ class LineLocation:
         return (self.__class__, self._getstate())
 
 
-
-
 class StyledString(str):
     """带样式的文本内容"""
 
-    font: str
+    font: Optional[str]
     """字体名称"""
-    size: int
+    size: Optional[int]
     """字体大小"""
-    
+
     _bold: bool
     """是否加粗"""
     _italic: bool
@@ -340,20 +340,28 @@ class StyledString(str):
     def __new__(
         cls,
         line_text: str = "",
-
         is_bold: bool = False,
         is_italic: bool = False,
         is_underline: bool = False,
         is_strikethrough: bool = False,
-        text_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (255, 255, 255, 255),
-
+        text_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (
+            255,
+            255,
+            255,
+            255,
+        ),
         outline_px: int = 0,
-        outline_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (0, 0, 0, 0),
-
-        background_cover_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (0, 0, 0, 0),
-
-        font_name: str = "",
-        font_size: int = -1,
+        outline_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]] = (
+            0,
+            0,
+            0,
+            0,
+        ),
+        background_cover_colour: Union[
+            str, Tuple[int, int, int], Tuple[int, int, int, int]
+        ] = (0, 0, 0, 0),
+        font_name: Optional[str] = None,
+        font_size: Optional[int] = None,
     ):
         """创建一个样式化字符串
 
@@ -392,114 +400,829 @@ class StyledString(str):
         instance._underline = is_underline
         instance._strikethrough = is_strikethrough
 
-        text_colour = ImageColor.getrgb(text_colour) if isinstance(text_colour, str) else text_colour
-        instance._colour = text_colour if len(text_colour) == 4 else text_colour + (255,)
+        instance._colour = _normalize_color(text_colour)
 
-        outline_colour = ImageColor.getrgb(outline_colour) if isinstance(outline_colour, str) else outline_colour
-        instance._outline = (outline_px, outline_colour if len(outline_colour) == 4 else outline_colour + (255,))
+        instance._outline = (outline_px, _normalize_color(outline_colour))
 
-        background_cover_colour = ImageColor.getrgb(background_cover_colour) if isinstance(background_cover_colour, str) else background_cover_colour
-        instance._background_cover = background_cover_colour if len(background_cover_colour) == 4 else background_cover_colour + (255,)
-        
+        instance._background_cover = _normalize_color(background_cover_colour)
+
         return instance
 
-    def copy(self) -> "StyledLine":
-        """复制样式"""
-        return StyledLine(
-            line_text=str(self),
-        )
-
-    def bold(self) -> "StyledLine":
-        """是否加粗"""
-        return self
-
-    def set_bold(self, is_bold: bool):
-        """设置加粗
-
-        Parameters
-        ----------
-        is_bold: bool
-            是否加粗
-        """
-        self._bold = is_bold
+    # 附加属性
 
     @property
-    def italic(self) -> bool:
+    def is_bold(self) -> bool:
+        """是否加粗"""
+        return self._bold
+
+    def bold(self, enable: bool = True) -> "StyledString":
+        """加粗"""
+        return StyledString(
+            str(self),
+            is_bold=enable,
+            is_italic=self.is_italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
+
+    @property
+    def is_italic(self) -> bool:
         """是否斜体"""
         return self._italic
 
-    def set_italic(self, is_italic: bool):
-        """设置斜体
-
-        Parameters
-        ----------
-        is_italic: bool
-            是否斜体
-        """
-        self._italic = is_italic
+    def italic(self, enable: bool = True) -> "StyledString":
+        """斜体"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=enable,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
 
     @property
-    def underline(self) -> bool:
+    def is_underline(self) -> bool:
         """是否下划线"""
         return self._underline
 
-    def set_underline(self, is_underline: bool):
-        """设置下划线
-
-        Parameters
-        ----------
-        is_underline: bool
-            是否下划线
-        """
-        self._underline = is_underline
+    def underline(self, enable: bool = True) -> "StyledString":
+        """下划线"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=self.is_italic,
+            is_underline=enable,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
 
     @property
-    def strikethrough(self) -> bool:
+    def is_strikethrough(self) -> bool:
         """是否删除线"""
         return self._strikethrough
 
-    def set_strikethrough(self, is_strikethrough: bool):
-        """设置删除线
-
-        Parameters
-        ----------
-        is_strikethrough: bool
-            是否删除线
-        """
-        self._strikethrough = is_strikethrough
+    def strikethrough(self, enable: bool = True) -> "StyledString":
+        """删除线"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=self.is_italic,
+            is_underline=self.is_underline,
+            is_strikethrough=enable,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
 
     @property
     def text_colour(self) -> Tuple[int, int, int, int]:
         """文字颜色"""
         return self._colour
 
-    def set_text_colour(self, text_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]]):
-        """设置文字颜色
-
-        Parameters
-        ----------
-        text_colour: str | Tuple[int, int, int] | Tuple[int, int, int, int]
-            文字颜色（可含透明度，RGBA顺序）
-        """
-        text_colour = ImageColor.getrgb(text_colour) if isinstance(text_colour, str) else text_colour
-        self._colour = text_colour if len(text_colour) == 4 else text_colour + (255,)
-
+    def coloured(
+        self, new_colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]]
+    ):
+        """上色"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=self.is_italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=new_colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
 
     @property
     def outline_size(self) -> int:
         """描边宽度"""
         return self._outline[0]
-    
+
     @property
     def outline_colour(self) -> Tuple[int, int, int, int]:
         """描边颜色"""
         return self._outline[1]
 
+    def outline(
+        self,
+        width: Optional[int] = None,
+        colour: Optional[
+            Union[str, Tuple[int, int, int], Tuple[int, int, int, int]]
+        ] = None,
+    ) -> "StyledString":
+        """描边"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=self.is_italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0] if width is None else width,
+            outline_colour=(
+                self._outline[1] if colour is None else _normalize_color(colour)
+            ),
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
+
     @property
-    def background_cover(self) -> Tuple[int, int, int, int]:
+    def background_cover_colour(self) -> Tuple[int, int, int, int]:
         """背景填充颜色"""
         return self._background_cover
 
+    def cover(
+        self, colour: Union[str, Tuple[int, int, int], Tuple[int, int, int, int]]
+    ):
+        """背景填充"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=self.is_italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=_normalize_color(colour),
+            font_name=self.font,
+            font_size=self.size,
+        )
+
+    def refont(self, name: str):
+        """重新设置字体"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=self.is_italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=name,
+            font_size=self.size,
+        )
+
+    def resize(self, value: int):
+        """重新设置文字大小"""
+        return StyledString(
+            str(self),
+            is_bold=self.is_bold,
+            is_italic=self.is_italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=value,
+        )
+
+    def with_styles(self, **kwargs):
+        """批量更新样式，返回新实例"""
+        # 当前所有参数的默认值
+        defaults = {
+            "is_bold": self._bold,
+            "is_italic": self._italic,
+            "is_underline": self._underline,
+            "is_strikethrough": self._strikethrough,
+            "text_colour": self._colour,
+            "outline_px": self._outline[0],
+            "outline_colour": self._outline[1],
+            "background_cover_colour": self._background_cover,
+            "font_name": self.font,
+            "font_size": self.size,
+        }
+        defaults.update(kwargs)
+        return StyledString(str(self), **defaults)
+
+    # 相等、哈希、比较
+    def __eq__(self, other):
+
+        if not isinstance(other, StyledString):
+
+            return NotImplemented
+
+        return (
+            str(self) == str(other)
+            and self.font == other.font
+            and self.size == other.size
+            and self._bold == other._bold
+            and self._italic == other._italic
+            and self._underline == other._underline
+            and self._strikethrough == other._strikethrough
+            and self._colour == other._colour
+            and self._outline == other._outline
+            and self._background_cover == other._background_cover
+        )
+
+    def __hash__(self):
+
+        return hash(
+            (
+                str(self),
+                self.font,
+                self.size,
+                self._bold,
+                self._italic,
+                self._underline,
+                self._strikethrough,
+                self._colour,
+                self._outline,
+                self._background_cover,
+            )
+        )
+
+    # 外读
+
+    def __repr__(self):
+
+        styles = []
+
+        if self._bold:
+            styles.append("bold")
+
+        if self._italic:
+            styles.append("italic")
+
+        if self._underline:
+            styles.append("underline")
+
+        if self._strikethrough:
+            styles.append("strikethrough")
+
+        style_str = ", styles=({})".format(", ".join(styles)) if styles else ""
+
+        if (self._colour[-1] != 0) and (self._colour != (255, 255, 255, 255)):
+            style_str += ", colour={}".format(self._colour)
+
+        if (self._outline[0] != 0) and (self._outline[1][-1] != 0):
+            style_str += ", outline={}".format(self._outline)
+
+        if (self._background_cover[-1] != 0) and (
+            self._background_cover != (0, 0, 0, 0)
+        ):
+            style_str += ", background_cover={}".format(self._background_cover)
+
+        if self.font:
+            style_str += ", font={!r}".format(self.font)
+
+        if self.size:
+            style_str += ", size={}".format(self.size)
+
+        return "StyledString({}{})".format(super().__repr__(), style_str)
+
+    def __str__(self) -> str:
+        """返回纯纯的字符串"""
+        return super().__str__()
+
+    # 字符串操作
+
+    # 操作
+    def _with_same_style(self, new_text: str) -> "StyledString":
+        """使用当前样式创建一个新的 StyledString 实例
+
+        Parameters
+        ----------
+        new_text: str
+            新的字符串内容
+
+        Returns
+        -------
+        StyledString
+            应用了当前实例样式的新的 StyledString 实例
+        """
+        return StyledString(
+            new_text,
+            is_bold=self._bold,
+            is_italic=self._italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
+
+    def split(
+        self, sep: Optional[str] = None, maxsplit: int = -1
+    ) -> List["StyledString"]:
+        """拆分字符串，返回一个列表，包含根据指定分隔符分割后的子字符串
+
+        Parameters
+        ----------
+        sep: str, optional
+            分隔符，默认为空格
+        maxsplit: int, optional
+            最大拆分数，默认为-1，表示不限制
+
+        Returns
+        -------
+        List[StyledString]
+            包含拆分后子字符串的新列表，每个元素保留原始样式
+        """
+        parts = super().split(sep, maxsplit)
+        return [self._with_same_style(part) for part in parts]
+
+    def rsplit(
+        self, sep: Optional[str] = None, maxsplit: int = -1
+    ) -> List["StyledString"]:
+        """从右边开始拆分字符串，返回一个列表，包含根据指定分隔符分割后的子字符串
+
+        Parameters
+        ----------
+        sep: str, optional
+            分隔符，默认为空格
+        maxsplit: int, optional
+            最大拆分数，默认为-1，表示不限制
+
+        Returns
+        -------
+        List[StyledString]
+            包含从右向左拆分后子字符串的新列表，每个元素保留原始样式
+        """
+        parts = super().rsplit(sep, maxsplit)
+        return [self._with_same_style(part) for part in parts]
+
+    def strip(self, chars: Optional[str] = None) -> "StyledString":
+        """移除字符串首尾指定字符或空白，默认移除空白
+
+        Parameters
+        ----------
+        chars: str, optional
+            要移除的字符集合，默认为空白
+
+        Returns
+        -------
+        StyledString
+            移除了指定字符的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().strip(chars))
+
+    def lstrip(self, chars: Optional[str] = None) -> "StyledString":
+        """移除字符串左侧指定字符或空白，默认移除空白
+
+        Parameters
+        ----------
+        chars: str, optional
+            要从左侧移除的字符集合，默认为空白字符
+
+        Returns
+        -------
+        StyledString
+            移除了左侧指定字符的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().lstrip(chars))
+
+    def rstrip(self, chars: Optional[str] = None) -> "StyledString":
+        """移除字符串右侧指定字符或空白，默认移除空白
+
+        Parameters
+        ----------
+        chars: str, optional
+            要从右侧移除的字符集合，默认为空白字符
+
+        Returns
+        -------
+        StyledString
+            移除了右侧指定字符的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().rstrip(chars))
+
+    def upper(self) -> "StyledString":
+        """转换字符串中所有的小写字母为大写
+
+        Returns
+        -------
+        StyledString
+            转换为大写的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().upper())
+
+    def lower(self) -> "StyledString":
+        """转换字符串中的所有大写字母为小写
+
+        Returns
+        -------
+        StyledString
+            转换为小写的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().lower())
+
+    def replace(self, old: str, new: str, count: int = -1) -> "StyledString":
+        """将字符串中的旧子串替换为新子串
+
+        Parameters
+        ----------
+        old: str
+            要被替换的子串
+        new: str
+            用于替换的新子串
+        count: int, optional
+            替换的最大次数，默认为-1，表示全部替换
+
+        Returns
+        -------
+        StyledString
+            执行替换后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().replace(old, new, count))
+
+    def title(self) -> "StyledString":
+        """将字符串中每个单词的首字母大写，其余字母小写
+
+        Returns
+        -------
+        StyledString
+            转换为首字母大写格式的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().title())
+
+    def capitalize(self) -> "StyledString":
+        """将字符串的首字母大写，其余字母转为小写
+
+        Returns
+        -------
+        StyledString
+            首字母大写、其余小写的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().capitalize())
+
+    def swapcase(self) -> "StyledString":
+        """将字符串中的大写字母转为小写，小写字母转为大写
+
+        Returns
+        -------
+        StyledString
+            大小写互换后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().swapcase())
+
+    def center(self, width: int, fillchar: str = " ") -> "StyledString":
+        """返回一个指定宽度的居中对齐字符串，两侧用指定字符填充
+
+        Parameters
+        ----------
+        width: int
+            目标字符串总宽度
+        fillchar: str, optional
+            填充字符，默认为空格
+
+        Returns
+        -------
+        StyledString
+            居中对齐并填充后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().center(width, fillchar))
+
+    def ljust(self, width: int, fillchar: str = " ") -> "StyledString":
+        """返回一个左对齐的字符串，右侧用指定字符填充至指定宽度
+
+        Parameters
+        ----------
+        width: int
+            目标字符串总宽度
+        fillchar: str, optional
+            填充字符，默认为空格
+
+        Returns
+        -------
+        StyledString
+            左对齐并填充后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().ljust(width, fillchar))
+
+    def rjust(self, width: int, fillchar: str = " ") -> "StyledString":
+        """返回一个右对齐的字符串，左侧用指定字符填充至指定宽度
+
+        Parameters
+        ----------
+        width: int
+            目标字符串总宽度
+        fillchar: str, optional
+            填充字符，默认为空格
+
+        Returns
+        -------
+        StyledString
+            右对齐并填充后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().rjust(width, fillchar))
+
+    def zfill(self, width: int) -> "StyledString":
+        """在字符串左侧用 '0' 填充至指定宽度，适用于数字字符串的补零操作
+
+        Parameters
+        ----------
+        width: int
+            目标字符串总宽度
+
+        Returns
+        -------
+        StyledString
+            左侧补零后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().zfill(width))
+
+    def partition(
+        self, sep: str
+    ) -> Tuple["StyledString", "StyledString", "StyledString"]:
+        """根据指定分隔符将字符串分割为三部分：(前缀, 分隔符, 后缀)
+
+        Parameters
+        ----------
+        sep: str
+            用作分割的分隔符
+
+        Returns
+        -------
+        Tuple[StyledString, StyledString, StyledString]
+            一个包含三个元素的元组：
+            - 第一部分：分隔符前的子串
+            - 第二部分：分隔符本身（若未找到则为空字符串）
+            - 第三部分：分隔符后的子串
+            所有部分均保留原始样式
+        """
+        a, b, c = super().partition(sep)
+        return (
+            self._with_same_style(a),
+            self._with_same_style(b),
+            self._with_same_style(c),
+        )
+
+    def rpartition(
+        self, sep: str
+    ) -> Tuple["StyledString", "StyledString", "StyledString"]:
+        """从右侧开始，根据指定分隔符将字符串分割为三部分：(前缀, 分隔符, 后缀)
+
+        Parameters
+        ----------
+        sep: str
+            用作分割的分隔符
+
+        Returns
+        -------
+        Tuple[StyledString, StyledString, StyledString]
+            一个包含三个元素的元组：
+            - 第一部分：最后一个分隔符前的子串
+            - 第二部分：分隔符本身（若未找到则为空字符串）
+            - 第三部分：最后一个分隔符后的子串
+            所有部分均保留原始样式
+        """
+        a, b, c = super().rpartition(sep)
+        return (
+            self._with_same_style(a),
+            self._with_same_style(b),
+            self._with_same_style(c),
+        )
+
+    # 索引和切片
+    def __getitem__(self, key):
+        """支持通过索引或切片获取子字符串，并保留原始样式
+
+        Parameters
+        ----------
+        key: int | slice
+            索引位置或切片对象
+
+        Returns
+        -------
+        StyledString | str
+            若结果为字符串（如切片或单字符），则返回带有原始样式的 StyledString；
+            其他情况（如超出范围等）按原生行为处理
+        """
+        result = super().__getitem__(key)
+        if isinstance(result, str):
+            return self._with_same_style(result)
+        return result
+
+    # 运算符
+
+    def __add__(self, other: Union[str, "StyledString"]) -> "StyledString":
+        """连接当前字符串与另一个字符串
+
+        Parameters
+        ----------
+        other: str | StyledString
+            要连接的字符串
+
+        Returns
+        -------
+        StyledString
+            连接后的新字符串，保留当前实例的样式
+        """
+        if isinstance(other, StyledString):
+            # 若 other 也是 StyledString，仍以 self 的样式为准
+            return self._with_same_style(str(self) + str(other))
+        elif isinstance(other, str):
+            return self._with_same_style(str(self) + other)
+        return NotImplemented
+
+    def __radd__(self, other: str) -> "StyledString":
+        """反向连接（当 StyledString 在右侧时）
+
+        Parameters
+        ----------
+        other: str
+            左侧的普通字符串
+
+        Returns
+        -------
+        StyledString
+            连接后的新字符串，保留当前实例的样式
+        """
+        if isinstance(other, StyledString):
+            # 若 other 也是 StyledString，仍以 self 的样式为准
+            return self._with_same_style(str(self) + str(other))
+        elif isinstance(other, str):
+            return self._with_same_style(other + str(self))
+        return NotImplemented
+
+    def __mul__(self, n: int) -> "StyledString":
+        """重复当前字符串 n 次
+
+        Parameters
+        ----------
+        n: int
+            重复次数
+
+        Returns
+        -------
+        StyledString
+            重复后的新字符串，保留原始样式
+        """
+        if isinstance(n, int):
+            return self._with_same_style(str(self) * n)
+        return NotImplemented
+
+    def __rmul__(self, n: int) -> "StyledString":
+        """反向重复（支持 3 * s）
+
+        Parameters
+        ----------
+        n: int
+            重复次数
+
+        Returns
+        -------
+        StyledString
+            重复后的新字符串，保留原始样式
+        """
+        return self.__mul__(n)
+
+    def __contains__(self, item: str) -> bool:
+        """检查子字符串是否存在于当前字符串中
+
+        Parameters
+        ----------
+        item: str
+            要检查的子字符串
+
+        Returns
+        -------
+        bool
+            如果存在则返回 True，否则 False
+        """
+        return item in str(self)
+
+    def __bool__(self) -> bool:
+        """当字符串非空时为 True"""
+        return len(self) > 0
+
+    # 兼容正则匹配
+
+    def sub(
+        self,
+        pattern: Union[str, Pattern],
+        repl: Union[str, Callable],
+        count: int = 0,
+    ) -> "StyledString":
+        """使用正则表达式替换匹配项，返回新 StyledString（保留原始样式）
+
+        Parameters
+        ----------
+        pattern: str | re.Pattern
+            正则表达式模式
+        repl: str | Callable
+            替换字符串或替换函数
+        count: int, optional
+            最大替换次数，默认为 0（全部替换）
+
+        Returns
+        -------
+        StyledString
+            执行正则替换后的新字符串，保留原始样式
+        """
+        new_text = re.sub(pattern, repl, str(self), count=count)
+        return self._with_same_style(new_text)
+
+    def split_re(
+        self, pattern: Union[str, Pattern], maxsplit: int = 0
+    ) -> List["StyledString"]:
+        """使用正则表达式分割字符串
+
+        Parameters
+        ----------
+        pattern: str | re.Pattern
+            正则表达式分隔符
+        maxsplit: int, optional
+            最大分割次数，默认为 0（不限制）
+
+        Returns
+        -------
+        List[StyledString]
+            分割后的子字符串列表，每个元素保留原始样式
+        """
+        parts = re.split(pattern, str(self), maxsplit=maxsplit)
+        return [self._with_same_style(part) for part in parts]
+
+    def findall(self, pattern: Union[str, Pattern]) -> List["StyledString"]:
+        """查找所有与正则表达式匹配的子串
+
+        Parameters
+        ----------
+        pattern: str | re.Pattern
+            正则表达式模式
+
+        Returns
+        -------
+        List[StyledString]
+            所有匹配的子字符串列表，每个元素保留原始样式
+        """
+        matches = re.findall(pattern, str(self))
+        # 注意：findall 返回的是 str 列表（除非有分组）
+        if not matches:
+            return []
+        # 如果是元组（因分组），我们只取完整匹配（但 re.findall 不直接给完整匹配）
+        # 所以建议用户用 finditer 或确保无捕获组
+        return [
+            (
+                self._with_same_style(m)
+                if isinstance(m, str)
+                else self._with_same_style(str(m))
+            )
+            for m in matches
+        ]
+
+    def search(self, pattern: Union[str, Pattern]) -> Optional[re.Match]:
+        """在字符串中搜索第一个匹配项（返回 re.Match，不带样式）
+
+        Parameters
+        ----------
+        pattern: str | re.Pattern
+            正则表达式模式
+
+        Returns
+        -------
+        re.Match | None
+            匹配对象或 None
+        """
+        return re.search(pattern, str(self))
+
+    def match(self, pattern: Union[str, Pattern]) -> Optional[re.Match]:
+        """从字符串开头匹配正则表达式
+
+        Parameters
+        ----------
+        pattern: str | re.Pattern
+            正则表达式模式
+
+        Returns
+        -------
+        re.Match | None
+            匹配对象或 None
+        """
+        return re.match(pattern, str(self))
 
 
 @dataclass(init=False)
@@ -507,17 +1230,19 @@ class SingleLine:
     """一句词，这里的 Line 指的是台词"""
 
     location: LineLocation
-    context: List[StyledLine]
+    context: List[List[StyledString]]
     duration: Optional[TimeStamp]
-    word_extension: Optional[Dict[TimeStamp, str]]
+    word_extension: Optional[List[Dict[TimeStamp, StyledString]]]
 
     def __init__(
         self,
-        sentence: str,
+        sentence: Union[str, StyledString, List[Union[str, StyledString]]],
         duration: Optional[TimeStamp] = None,
         extension: Optional[Dict[TimeStamp, str]] = None,
     ):
         """建立一句歌词"""
+
+        # ------------------------------TODO：还没做完
         self.context = sentence
         self.duration = duration
         self.word_extension = extension

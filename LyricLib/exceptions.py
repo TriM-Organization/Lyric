@@ -57,3 +57,25 @@ class ParseError(LyricBaseException):
     def __init__(self, *args):
         """解析错误"""
         super().__init__("解析错误", *args)
+
+class InvalidColourError(ParseError):
+    """颜色无效"""
+
+    def __init__(self, *args):
+        """颜色无效"""
+        super().__init__("颜色无效", *args)
+
+class ColourFormatError(ParseError, ValueError):
+    """颜色格式错误"""
+
+    def __init__(self, *args):
+        """颜色格式错误"""
+        super().__init__("颜色格式错误", *args)
+
+class ColourTypeError(ParseError, TypeError):
+    """颜色参数类型错误"""
+
+    def __init__(self, *args):
+        """颜色参数类型错误"""
+        super().__init__("颜色参数类型错误", *args)
+
