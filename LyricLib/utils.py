@@ -5,8 +5,8 @@
 """
 
 """
-版权所有 © 2022-2025 金羿ELS、Baby2016 及 thecasttim
-Copyright © 2022-2025 thecasttim & Baby2016 & Eilles
+版权所有 © 2025 金羿ELS
+Copyright © 2025 Eilles
 
 开源相关声明请见 仓库根目录下的 License.md
 Terms & Conditions: License.md in the root directory

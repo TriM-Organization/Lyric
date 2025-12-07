@@ -2,7 +2,7 @@
 """
 歌词的处理工具
 
-此部分的代码由 thecasttim 的 [lrc-parser](https://gitee.com/thecasttim/lrc-parser) 项目改编而来
+部分 LRC 文件处理代码由 thecasttim 的 [lrc-parser](https://gitee.com/thecasttim/lrc-parser) 项目改编而来
 
 引用协议：
     MIT License
@@ -40,7 +40,7 @@ import codecs
 from typing import Any, TextIO, Dict
 from dataclasses import dataclass
 
-from .subclass import TimeStamp, SingleLine, MetaInfo
+from .subclass import TimeStamp, SubtitleBlock, MetaInfo
 
 from .lrc.constants import (
     LRC_TAG_PATTERN,
@@ -61,7 +61,7 @@ from .lrc.utils import (
 class Lyric:
     """歌词的操作以及数据类"""
 
-    lyrics: Dict[TimeStamp, SingleLine]
+    lyrics: Dict[TimeStamp, SubtitleBlock]
     """歌词字典，以一个时间戳对应一个单行歌词类"""
 
     meta_info: MetaInfo
@@ -75,7 +75,7 @@ class Lyric:
 
     def __init__(
         self,
-        lyrics: Dict[TimeStamp, SingleLine] = {},
+        lyrics: Dict[TimeStamp, SubtitleBlock] = {},
         meta_info: MetaInfo = MetaInfo(),
     ):
         """
@@ -135,12 +135,12 @@ class Lyric:
                     # 增强格式（字词标签处理）
                     timestamps, parts = parse_lrc_enhanced_segment(segments[i])
 
-                    lrc.lyrics[time_now] = SingleLine.from_lrc_str_list(
+                    lrc.lyrics[time_now] = SubtitleBlock.from_lrc_str_list(
                         "".join(parts), timestamps, parts[1:]
                     )
                 else:
                     # 普通格式（单句标签）
-                    lrc.lyrics[time_now] = SingleLine(segments[i])
+                    lrc.lyrics[time_now] = SubtitleBlock(segments[i])
                 lrc.whole_contexts += lrc.lyrics[time_now].context.replace(" ", "")
 
             elif tag_type == TagType.ID:

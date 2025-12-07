@@ -1,7 +1,8 @@
+
 # -*- coding: utf-8 -*-
 
 """
-常量与数值性内容
+类型定义
 """
 
 """
@@ -17,18 +18,11 @@ Terms & Conditions: License.md in the root directory
 # 若需转载或借鉴 许可声明请查看仓库目录下的 License.md
 
 
-HOUR = "hours"
-"""时"""
 
-MINUTE = "minutes"
-"""分"""
+from typing import Protocol, runtime_checkable
 
-SECOND = "seconds"
-"""秒"""
-
-CENTISECOND = "centiseconds"
-"""厘秒"""
-
-MILLISECOND = "milliseconds"
-"""毫秒"""
-
+@runtime_checkable
+class CopyableSequence(Protocol):
+    def __len__(self) -> int: ...
+    def __getitem__(self, i): ...
+    def copy(self): ...

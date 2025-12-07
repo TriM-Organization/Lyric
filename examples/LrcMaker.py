@@ -1,7 +1,7 @@
 import threading
 import time
 
-from LyricLib import LRC_ID_TAG2META_NAME, Lyric, SingleLine, TimeStamp
+from LyricLib import LRC_ID_TAG2META_NAME, Lyric, SubtitleBlock, TimeStamp
 
 lyric = Lyric()
 
@@ -29,7 +29,7 @@ start_time = time.time()
 for line in lines:
     input(line)
     t = TimeStamp(sec=time.time() - start_time)
-    lyric.lyrics[t] = SingleLine(line)
+    lyric.lyrics[t] = SubtitleBlock(line)
     print(t)
 
 with open(

@@ -5,8 +5,8 @@
 """
 
 """
-版权所有 © 2022-2025 金羿ELS、Baby2016 及 thecasttim
-Copyright © 2022-2025 thecasttim & Baby2016 & Eilles
+版权所有 © 2022-2025 金羿ELS
+Copyright © 2022-2025 Eilles
 
 开源相关声明请见 仓库根目录下的 License.md
 Terms & Conditions: License.md in the root directory
@@ -31,10 +31,10 @@ class LrcDestroyedError(InvalidFileError):
 class WordTagError(ParseError):
     """字词标签错误"""
 
-    def __init__(self, words_less_than_tags: bool = True, *args):
+    def __init__(self, *args):
         """字词标签未一一对应"""
         super().__init__(
-            "字词标签错误：字词{}标签个数".format("小于" if words_less_than_tags else "大于"), *args
+            "字词标签错误：字词数量与标签数不符", *args
         )
 
 

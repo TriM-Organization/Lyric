@@ -5,8 +5,8 @@
 """
 
 """
-版权所有 © 2022-2025 金羿ELS、Baby2016 及 thecasttim
-Copyright © 2022-2025 thecasttim & Baby2016 & Eilles
+版权所有 © 2022-2025 金羿ELS
+Copyright © 2022-2025 Eilles
 
 开源相关声明请见 仓库根目录下的 License.md
 Terms & Conditions: License.md in the root directory
@@ -19,14 +19,28 @@ Terms & Conditions: License.md in the root directory
 
 from enum import Enum
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Union, Optional, Literal, Callable, Any, Pattern
+from typing import (
+    Dict,
+    List,
+    Tuple,
+    Union,
+    Optional,
+    Literal,
+    Callable,
+    Any,
+    Pattern,
+    Sequence,
+    Iterable,
+    Mapping,
+)
 
 import re
 from PIL import ImageColor, Image, ImageFont
 from datetime import time, timedelta
 
+from .types import CopyableSequence
 from .utils import _normalize_color
-from .exceptions import TimeTooPreciseError
+from .exceptions import TimeTooPreciseError, LineSentenceFormatError
 from .constants import HOUR, MINUTE, SECOND, MILLISECOND, CENTISECOND
 
 from .lrc.constants import LRC_ID_TAG2META_NAME, STABLE_LRC_TIME_FORMAT_STYLE
@@ -624,6 +638,33 @@ class StyledString(str):
         defaults.update(kwargs)
         return StyledString(str(self), **defaults)
 
+    def _with_same_style(self, new_text: str) -> "StyledString":
+        """使用当前样式创建一个新的 StyledString 实例
+
+        Parameters
+        ----------
+        new_text: str
+            新的字符串内容
+
+        Returns
+        -------
+        StyledString
+            应用了当前实例样式的新的 StyledString 实例
+        """
+        return StyledString(
+            new_text,
+            is_bold=self._bold,
+            is_italic=self._italic,
+            is_underline=self.is_underline,
+            is_strikethrough=self.is_strikethrough,
+            text_colour=self._colour,
+            outline_px=self._outline[0],
+            outline_colour=self._outline[1],
+            background_cover_colour=self._background_cover,
+            font_name=self.font,
+            font_size=self.size,
+        )
+
     # 相等、哈希、比较
     def __eq__(self, other):
 
@@ -664,6 +705,18 @@ class StyledString(str):
     # 外读
 
     def __repr__(self):
+        """
+        输出格式：
+        StyledString(
+            text,
+            styles=(bold, italic, underline, strikethrough),
+            colour=(R, G, B, A),
+            outline=(px, (R, G, B, A)),
+            background_cover=(R, G, B, A),
+            font=name,
+            font_size=size,
+        )
+        """
 
         styles = []
 
@@ -704,35 +757,53 @@ class StyledString(str):
         """返回纯纯的字符串"""
         return super().__str__()
 
-    # 字符串操作
+    def __iter__(self):
+        """迭代串内元素
 
-    # 操作
-    def _with_same_style(self, new_text: str) -> "StyledString":
-        """使用当前样式创建一个新的 StyledString 实例
+        Yields
+        ------
+        StyledString
+            每个字符作为一个保留原始样式的 StyledString 实例
+        """
+        for char in str(self):
+            yield self._with_same_style(char)
+
+    def join(self, iterable: Iterable[Union[str, "StyledString"]]) -> "StyledString":
+        """使用当前字符串作为分隔符，连接可迭代对象中的元素
 
         Parameters
         ----------
-        new_text: str
-            新的字符串内容
+        iterable: Iterable[str | StyledString]
+            要连接的字符串序列
 
         Returns
         -------
         StyledString
-            应用了当前实例样式的新的 StyledString 实例
+            连接后的新字符串，保留当前实例（分隔符）的样式
         """
-        return StyledString(
-            new_text,
-            is_bold=self._bold,
-            is_italic=self._italic,
-            is_underline=self.is_underline,
-            is_strikethrough=self.is_strikethrough,
-            text_colour=self._colour,
-            outline_px=self._outline[0],
-            outline_colour=self._outline[1],
-            background_cover_colour=self._background_cover,
-            font_name=self.font,
-            font_size=self.size,
-        )
+        return self._with_same_style(super().join([str(item) for item in iterable]))
+
+    # 索引和切片
+    def __getitem__(self, key):
+        """支持通过索引或切片获取子字符串，并保留原始样式
+
+        Parameters
+        ----------
+        key: int | slice
+            索引位置或切片对象
+
+        Returns
+        -------
+        StyledString | str
+            若结果为字符串（如切片或单字符），则返回带有原始样式的 StyledString；
+            其他情况（如超出范围等）按原生行为处理
+        """
+        result = super().__getitem__(key)
+        if isinstance(result, str):
+            return self._with_same_style(result)
+        return result
+
+    # 操作
 
     def split(
         self, sep: Optional[str] = None, maxsplit: int = -1
@@ -751,8 +822,7 @@ class StyledString(str):
         List[StyledString]
             包含拆分后子字符串的新列表，每个元素保留原始样式
         """
-        parts = super().split(sep, maxsplit)
-        return [self._with_same_style(part) for part in parts]
+        return [self._with_same_style(part) for part in super().split(sep, maxsplit)]
 
     def rsplit(
         self, sep: Optional[str] = None, maxsplit: int = -1
@@ -771,8 +841,7 @@ class StyledString(str):
         List[StyledString]
             包含从右向左拆分后子字符串的新列表，每个元素保留原始样式
         """
-        parts = super().rsplit(sep, maxsplit)
-        return [self._with_same_style(part) for part in parts]
+        return [self._with_same_style(part) for part in super().rsplit(sep, maxsplit)]
 
     def strip(self, chars: Optional[str] = None) -> "StyledString":
         """移除字符串首尾指定字符或空白，默认移除空白
@@ -1006,25 +1075,76 @@ class StyledString(str):
             self._with_same_style(c),
         )
 
-    # 索引和切片
-    def __getitem__(self, key):
-        """支持通过索引或切片获取子字符串，并保留原始样式
+    # 格式化支持
+
+    def __mod__(self, args):
+        """支持 % 格式化，使用 {} 或 {name} 的格式来标识替换位置。
 
         Parameters
         ----------
-        key: int | slice
-            索引位置或切片对象
+        args: tuple
+            位置参数
+
+        Raises
+        ------
+        ValueError
+            如果格式化字符串中包含无效的格式字符
+        TypeError
+            如果格式化字符串中包含无效的格式字符
 
         Returns
         -------
-        StyledString | str
-            若结果为字符串（如切片或单字符），则返回带有原始样式的 StyledString；
-            其他情况（如超出范围等）按原生行为处理
+        StyledString
+            格式化后的新字符串，保留原始样式
         """
-        result = super().__getitem__(key)
+        result = super().__mod__(args)
         if isinstance(result, str):
             return self._with_same_style(result)
         return result
+
+    def format(self, *args, **kwargs) -> "StyledString":
+        """返回一个格式化的字符串，在原串中用 {} 或 {name} 的格式来标识替换位置。
+
+        Parameters
+        ----------
+        args: tuple
+            位置参数
+        kwargs: dict
+            关键字参数
+
+        Raises
+        ------
+        ValueError
+            如果格式化字符串中包含无效的格式字符
+        TypeError
+            如果格式化字符串中包含无效的格式字符
+
+        Returns
+        -------
+        StyledString
+            格式化后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().format(*args, **kwargs))
+
+    def format_map(self, mapping) -> "StyledString":
+        """使用键值对填充格式字符串。
+
+        Parameters
+        ----------
+        mapping: dict
+            键值对映射表
+
+        Raises
+        ------
+        KeyError
+            如果格式字符串中包含无效的格式字符
+
+        Returns
+        -------
+        StyledString
+            格式化后的新字符串，保留原始样式
+        """
+        return self._with_same_style(super().format_map(mapping))
 
     # 运算符
 
@@ -1100,12 +1220,12 @@ class StyledString(str):
         """
         return self.__mul__(n)
 
-    def __contains__(self, item: str) -> bool:
+    def __contains__(self, item: Union[str, "StyledString"]) -> bool:
         """检查子字符串是否存在于当前字符串中
 
         Parameters
         ----------
-        item: str
+        item: str | StyledString
             要检查的子字符串
 
         Returns
@@ -1113,7 +1233,7 @@ class StyledString(str):
         bool
             如果存在则返回 True，否则 False
         """
-        return item in str(self)
+        return str(item) in str(self)
 
     def __bool__(self) -> bool:
         """当字符串非空时为 True"""
@@ -1226,26 +1346,92 @@ class StyledString(str):
 
 
 @dataclass(init=False)
-class SingleLine:
-    """一句词，这里的 Line 指的是台词"""
+class SubtitleBlock:
+    """一块词，包括类似中西对照的多行字幕"""
 
     location: LineLocation
     context: List[List[StyledString]]
+    """```
+    [
+        ["A quick ", "**fox**"],
+        ["一只矫健的", "**狐狸**"],
+    ]
+    ```"""
     duration: Optional[TimeStamp]
-    word_extension: Optional[List[Dict[TimeStamp, StyledString]]]
+    word_extension: Optional[List[Dict[TimeStamp, List[StyledString]]]]
+    """语速可能不一样，因此用列表在外，字典在内。
+    ```
+    [
+        {
+            TimeStamp(0): ["A quick ", "**fox**"],
+            TimeStamp(1): [" jumps"],
+            TimeStamp(2): [" over"],
+            TimeStamp(3): [" the lazy dog."],
+        },
+        {
+            TimeStamp(0): ["一只矫健的", ],
+            TimeStamp(1): ["**狐狸**", "跳过了"],
+            TimeStamp(3): ["那懒惰的狗。"],
+        },
+    ]
+    ```
+    """
 
     def __init__(
         self,
-        sentence: Union[str, StyledString, List[Union[str, StyledString]]],
+        sentence: Union[
+            StyledString, Sequence[StyledString], Sequence[Sequence[StyledString]]
+        ],
         duration: Optional[TimeStamp] = None,
-        extension: Optional[Dict[TimeStamp, str]] = None,
+        extension: Optional[
+            Sequence[Mapping[TimeStamp, Sequence[StyledString]]]
+        ] = None,
     ):
-        """建立一句歌词"""
+        """
+        建立一条词句
+        
+        Parameters
+        ----------
+        sentence: StyledString | Sequence[StyledString] | Sequence[Sequence[StyledString]]
+            词句
+            - 当是字符串时，将自动以换行拆分并创建 StyledString 对象
+            - 当是单层序列时，认为表示分为当前词句的多行
+            - 当是双层序列时，第一层用以分行，第二行用以分词区别样式
+        duration: TimeStamp, optional
+            词句的持续时间
+        extension: Sequence[Mapping[TimeStamp, Sequence[StyledString]]], optional
+            词句的扩展，可以是字符串列表，也可以是字符串列表列表
 
-        # ------------------------------TODO：还没做完
-        self.context = sentence
+        Raises
+        ------
+        LineSentenceFormatError
+            如果 sentence 的格式不正确，将抛出内部错误
+        """
+
+        if isinstance(sentence, str):
+            if "\n" in sentence:
+                self.context = [
+                    StyledString(sentence).split("\n"),
+                ]
+            self.context = [
+                [
+                    StyledString(sentence),
+                ]
+            ]
+        elif isinstance(sentence, Sequence):
+            if all(isinstance(item, StyledString) for item in sentence):
+                self.context = [[item,] for item in sentence]   # type: ignore
+            elif all(isinstance(item, Sequence) for item in sentence):
+                self.context = [list(item) for item in sentence]  # type: ignore
+        else:
+            raise LineSentenceFormatError("类型：", type(sentence), "内容：", sentence)
+
         self.duration = duration
-        self.word_extension = extension
+        self.word_extension = (
+            extension
+            if extension is None
+            else [{k: list(v) for k, v in line.items()} for line in extension]
+        )
 
     def __str__(self) -> str:
         if self.word_extension:
@@ -1259,33 +1445,81 @@ class SingleLine:
             return self.context
 
     @classmethod
-    def from_lrc_str_dict(cls, sentence: str, **extension):
+    def from_lrc_str_dict(
+        cls,
+        sentence: Union[
+            StyledString, Sequence[StyledString], Sequence[Sequence[StyledString]]
+        ],
+        **extension: Sequence[StyledString],
+    ):
         """从LRC时间标签字符串而组成的字典中获取附加信息"""
-        word_extension = {}
-        for time_str, word in extension.items():
-            word_extension[TimeStamp.from_lrc_timetag(time_tag_str=time_str)] = word
-        return cls(sentence, extension=word_extension)
+
+        time_str_per_word, words_per_line = zip(*extension.items())
+
+        return cls.from_lrc_str_list(
+            sentence, time_str_list=time_str_per_word, word_list_per_line=words_per_line
+        )
+
+        # (
+        #     sentence,
+        #     extension=[
+        #         {
+        #             TimeStamp.from_lrc_timetag(
+        #                 time_tag_str=time_str_per_word[i]
+        #             ): line_words[i]
+        #             for i in range(len(time_str_per_word))
+        #         }
+        #         for line_words in words_per_line
+        #     ],
+        # )
+
+    
 
     @classmethod
     def from_lrc_str_list(
-        cls, sentence: str, time_str_list: List[str], word_list: List[str]
+        cls,
+        sentence: Union[
+            StyledString, Sequence[StyledString], Sequence[Sequence[StyledString]]
+        ],
+        time_str_list: Sequence[StyledString],
+        word_list_per_line: Sequence[Sequence[StyledString]], # -------------TODO: 不对！LRC可以实现多行歌词！
     ):
-        """从LRC时间列表和单词列表中获取附加信息"""
+        """从LRC时间列表和单词列表中获取附加信息
+
+        Parameters
+        ----------
+        sentence: StyledString | Sequence[StyledString] | Sequence[Sequence[StyledString]]
+            词句
+            - 当是字符串时，将自动以换行拆分并创建 StyledString 对象
+            - 当是单层序列时，认为表示分为当前词句的多行
+            - 当是双层序列时，第一层用以分行，第二行用以分词区别样式
+        time_str_list: Sequence[StyledString]
+            LRC时间标签列表
+        word_list_per_line: Sequence[Sequence[Sequence[StyledString]],]
+            单词列表
+            1. 第一层用以按照时间分词（匹配时间标签）
+            2. 第二层用以按照样式分词
+        """
         time_list_length = len(time_str_list)
-        word_list_length = len(word_list)
-        if time_list_length != word_list_length:
+
+        if not all(time_list_length == len(line) for line in word_list_per_line):
             raise WordTagError(
-                word_list_length < time_list_length, time_str_list, word_list
+                time_str_list,
+                word_list_per_line,
+                "当前符合情况：",
+                (time_list_length == len(line) for line in word_list_per_line),
             )
-        word_extension = {}
-        for i in range(time_list_length):
-            # print("=====")
-            # print(time_str_list[i],TimeStamp.from_lrc_time_tag(time_str_list[i]),word_list[i])
-            word_extension[
-                TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i])
-            ] = word_list[i]
-            # print("=====")
-        return cls(sentence, extension=word_extension)
+
+        return cls(
+            sentence,
+            extension=[
+                {
+                    TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i]): line[i]
+                    for line in word_list_per_line
+                }
+                for i in range(time_list_length)
+            ],
+        )
 
     def to_lrc_str(self, format_style: str = r"{mm}:{ss}.{xx}") -> str:
         """

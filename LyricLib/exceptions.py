@@ -5,8 +5,8 @@
 """
 
 """
-版权所有 © 2022-2025 金羿ELS、Baby2016 及 thecasttim
-Copyright © 2022-2025 thecasttim & Baby2016 & Eilles
+版权所有 © 2022-2025 金羿ELS
+Copyright © 2022-2025 Eilles
 
 开源相关声明请见 仓库根目录下的 License.md
 Terms & Conditions: License.md in the root directory
@@ -35,16 +35,29 @@ class LyricBaseException(Exception):
     def crash_it(self):
         raise self
 
+class InnerlyError(LyricBaseException):
+    """内部错误"""
+
+    def __init__(self, *args):
+        """内部错误"""
+        super().__init__("内部错误", *args)
+
+class OuterlyError(LyricBaseException):
+    """外部错误"""
+
+    def __init__(self, *args):
+        """外部错误"""
+        super().__init__("外部错误", *args)
 
 
-class InvalidFileError(LyricBaseException):
+class InvalidFileError(OuterlyError):
     """文件损坏"""
 
     def __init__(self, *args):
         """文件损坏"""
         super().__init__("文件损坏", *args)
 
-class TimeTooPreciseError(LyricBaseException):
+class TimeTooPreciseError(InnerlyError):
     """时间过于精确"""
 
     def __init__(self, *args):
@@ -58,24 +71,36 @@ class ParseError(LyricBaseException):
         """解析错误"""
         super().__init__("解析错误", *args)
 
-class InvalidColourError(ParseError):
+
+
+
+class InvalidColourError(ParseError, InnerlyError):
     """颜色无效"""
 
     def __init__(self, *args):
         """颜色无效"""
         super().__init__("颜色无效", *args)
 
-class ColourFormatError(ParseError, ValueError):
+
+class ColourFormatError(InvalidColourError, ValueError):
     """颜色格式错误"""
 
     def __init__(self, *args):
         """颜色格式错误"""
         super().__init__("颜色格式错误", *args)
 
-class ColourTypeError(ParseError, TypeError):
+class ColourTypeError(InvalidColourError, TypeError):
     """颜色参数类型错误"""
 
     def __init__(self, *args):
         """颜色参数类型错误"""
         super().__init__("颜色参数类型错误", *args)
+
+
+class LineSentenceFormatError(ParseError, TypeError, InnerlyError):
+    """单行词句格式错误"""
+
+    def __init__(self, *args):
+        """行句子格式错误"""
+        super().__init__("单行词句格式错误", *args)
 
