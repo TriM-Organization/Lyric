@@ -31,10 +31,10 @@ class LrcDestroyedError(InvalidFileError):
 class WordTagError(ParseError):
     """字词标签错误"""
 
-    def __init__(self, *args):
+    def __init__(self, words_less_than_tags: bool = True, *args):
         """字词标签未一一对应"""
         super().__init__(
-            "字词标签错误：字词数量与标签数不符", *args
+            "字词标签错误：字词{}标签个数".format("小于" if words_less_than_tags else "大于"), *args
         )
 
 

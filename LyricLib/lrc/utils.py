@@ -32,6 +32,7 @@ class TagType(Enum):
     TIME = 1  # 时间戳标签
     UNKNOWN = 2  # 未知标签
 
+
 def parse_lrc_time_tag(time_tag_str) -> Tuple[int, ...]:
     """
     将LRC文件的字符串格式的时间戳解析为 时、分、秒、毫秒
@@ -83,9 +84,6 @@ def parse_lrc_time_tag(time_tag_str) -> Tuple[int, ...]:
     return h, minute, s, ms
 
 
-
-
-
 def is_lrc_tag_valid(text):
     """
     检查标签括号是否匹配
@@ -106,7 +104,6 @@ def is_lrc_tag_valid(text):
             res.append(c)
 
     return len(res) == 0
-
 
 
 def get_lrc_tag_type(tag):
@@ -134,8 +131,7 @@ def is_lrc_segment_enhanced(segment):
     :param segment: 一段歌词
     :return: True, 包含增强格式的时间戳, False, 不含增强格式的时间戳
     """
-    pattern = LRC_ENHANCE_TIME_PATTERN_N
-    m = re.search(pattern, segment)
+    m = re.search(LRC_ENHANCE_TIME_PATTERN_N, segment)
     if m is not None:
         return True
     else:
@@ -148,7 +144,8 @@ def parse_lrc_enhanced_segment(segment):
     :param segment: 增强格式的歌词
     :return: timestamps: 时间戳列表, 由时间戳分割的各部分构成的列表
     """
-    pattern = LRC_ENHANCE_TIME_PATTERN_N
-    timestamps = [time[1:-1] for time in re.findall(pattern, segment)]
-    parts = re.split(pattern, segment)
+    timestamps = [
+        time[1:-1] for time in re.findall(LRC_ENHANCE_TIME_PATTERN_N, segment)
+    ]
+    parts = re.split(LRC_ENHANCE_TIME_PATTERN_N, segment)
     return timestamps, parts

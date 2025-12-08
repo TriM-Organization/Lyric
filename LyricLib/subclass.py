@@ -1400,7 +1400,7 @@ class SubtitleBlock:
         duration: TimeStamp, optional
             词句的持续时间
         extension: Sequence[Mapping[TimeStamp, Sequence[StyledString]]], optional
-            词句的扩展，可以是字符串列表，也可以是字符串列表列表
+            词句的扩展
 
         Raises
         ------
@@ -1457,7 +1457,7 @@ class SubtitleBlock:
         time_str_per_word, words_per_line = zip(*extension.items())
 
         return cls.from_lrc_str_list(
-            sentence, time_str_list=time_str_per_word, word_list_per_line=words_per_line
+            sentence, time_str_list=time_str_per_word, splited_sentence=words_per_line
         )
 
         # (
@@ -1478,44 +1478,45 @@ class SubtitleBlock:
     @classmethod
     def from_lrc_str_list(
         cls,
-        sentence: Union[
-            StyledString, Sequence[StyledString], Sequence[Sequence[StyledString]]
-        ],
-        time_str_list: Sequence[StyledString],
-        word_list_per_line: Sequence[Sequence[StyledString]], # -------------TODO: 不对！LRC可以实现多行歌词！
+        sentence: str,
+        time_str_list: Sequence[str],
+        splited_sentence: Sequence[str],
     ):
-        """从LRC时间列表和单词列表中获取附加信息
+        """从LRC时间列表和单词列表中读入词句
 
         Parameters
         ----------
-        sentence: StyledString | Sequence[StyledString] | Sequence[Sequence[StyledString]]
-            词句
-            - 当是字符串时，将自动以换行拆分并创建 StyledString 对象
-            - 当是单层序列时，认为表示分为当前词句的多行
-            - 当是双层序列时，第一层用以分行，第二行用以分词区别样式
-        time_str_list: Sequence[StyledString]
+        sentence: str
+            词句，会自动以换行拆分，并创建 StyledString 对象存入
+        time_str_list: Sequence[str]
             LRC时间标签列表
-        word_list_per_line: Sequence[Sequence[Sequence[StyledString]],]
-            单词列表
-            1. 第一层用以按照时间分词（匹配时间标签）
-            2. 第二层用以按照样式分词
+        splited_sentence: Sequence[str]
+            分词列表，表示依照时间标签进行分词的单行词句
         """
         time_list_length = len(time_str_list)
+        word_list_length = len(splited_sentence)
 
-        if not all(time_list_length == len(line) for line in word_list_per_line):
+        if time_list_length == word_list_length:
+            print("数量相同的时间与字词")
+            duration_time = None
+        elif time_list_length == word_list_length + 1:
+            print("时间标签比字词多一个")
+            duration_time = TimeStamp.from_lrc_timetag(time_str_list[-1])
+        else:
             raise WordTagError(
+                word_list_length < time_list_length,
                 time_str_list,
-                word_list_per_line,
-                "当前符合情况：",
-                (time_list_length == len(line) for line in word_list_per_line),
+                splited_sentence,
             )
+        # SubtitleBlock(sentence=StyledString(sentence),duration=)
 
         return cls(
-            sentence,
+            sentence=StyledString(sentence),
+            duration=duration_time,
             extension=[
                 {
-                    TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i]): line[i]
-                    for line in word_list_per_line
+                    TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i]): [StyledString(line[i]),]
+                    for line in splited_sentence
                 }
                 for i in range(time_list_length)
             ],

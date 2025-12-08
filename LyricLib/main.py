@@ -65,7 +65,7 @@ class Lyric:
     """歌词字典，以一个时间戳对应一个单行歌词类"""
 
     meta_info: MetaInfo
-    """曲目基础信息"""
+    """篇目基础信息"""
 
     extra_info: Dict[str, Any]
     """特殊信息字典"""
