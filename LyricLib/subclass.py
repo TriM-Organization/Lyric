@@ -1389,7 +1389,7 @@ class SubtitleBlock:
     ):
         """
         建立一条词句
-        
+
         Parameters
         ----------
         sentence: StyledString | Sequence[StyledString] | Sequence[Sequence[StyledString]]
@@ -1410,17 +1410,11 @@ class SubtitleBlock:
 
         if isinstance(sentence, str):
             if "\n" in sentence:
-                self.context = [
-                    StyledString(sentence).split("\n"),
-                ]
-            self.context = [
-                [
-                    StyledString(sentence),
-                ]
-            ]
+                self.context = [StyledString(sentence).split("\n")]
+            self.context = [[StyledString(sentence)]]
         elif isinstance(sentence, Sequence):
             if all(isinstance(item, StyledString) for item in sentence):
-                self.context = [[item,] for item in sentence]   # type: ignore
+                self.context = [[item] for item in sentence]  # type: ignore
             elif all(isinstance(item, Sequence) for item in sentence):
                 self.context = [list(item) for item in sentence]  # type: ignore
         else:
@@ -1434,23 +1428,13 @@ class SubtitleBlock:
         )
 
     def __str__(self) -> str:
-        if self.word_extension:
-            return "".join(
-                [
-                    r"<{}>{}".format(time.to_lrc_timetag(), word)
-                    for time, word in self.word_extension.items()
-                ]
-            )
-        else:
-            return self.context
+        return "\n".join("".join(row) for row in self.context)
 
     @classmethod
     def from_lrc_str_dict(
         cls,
-        sentence: Union[
-            StyledString, Sequence[StyledString], Sequence[Sequence[StyledString]]
-        ],
-        **extension: Sequence[StyledString],
+        sentence: str,
+        **extension: Sequence[str],
     ):
         """从LRC时间标签字符串而组成的字典中获取附加信息"""
 
@@ -1472,8 +1456,6 @@ class SubtitleBlock:
         #         for line_words in words_per_line
         #     ],
         # )
-
-    
 
     @classmethod
     def from_lrc_str_list(
@@ -1515,28 +1497,39 @@ class SubtitleBlock:
             duration=duration_time,
             extension=[
                 {
-                    TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i]): [StyledString(line[i]),]
+                    TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i]): [
+                        StyledString(line[i]),
+                    ]
                     for line in splited_sentence
                 }
                 for i in range(time_list_length)
             ],
         )
 
-    def to_lrc_str(self, format_style: str = r"{mm}:{ss}.{xx}") -> str:
+    def to_lrc_str(self, format_style: str = STABLE_LRC_TIME_FORMAT_STYLE) -> str:
         """
         以特定样式的LRC格式的时间标签返回整句
         """
         if self.word_extension:
-            return "".join(
-                [
-                    r"<{}>{}".format(
-                        time.to_lrc_timetag(format_style=format_style), word
+            return "\n".join(
+                "".join(
+                    "<{}>{}".format(
+                        time.to_lrc_timetag(format_style=format_style),
+                        "".join(word for word in words),
                     )
-                    for time, word in self.word_extension.items()
-                ]
+                    for time, words in line.items()
+                )
+                + (
+                    "<{}>".format(
+                        self.duration.to_lrc_timetag(format_style=format_style)
+                        if self.duration
+                        else ""
+                    )
+                )
+                for line in self.word_extension
             )
         else:
-            return self.context
+            return "\n".join("".join(row) for row in self.context)
 
 
 @dataclass(init=False)

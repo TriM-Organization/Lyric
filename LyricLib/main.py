@@ -40,7 +40,7 @@ import codecs
 from typing import Any, TextIO, Dict
 from dataclasses import dataclass
 
-from .subclass import TimeStamp, SubtitleBlock, MetaInfo
+from .subclass import TimeStamp, SubtitleBlock, MetaInfo, StyledString
 
 from .lrc.constants import (
     LRC_TAG_PATTERN,
@@ -140,8 +140,8 @@ class Lyric:
                     )
                 else:
                     # 普通格式（单句标签）
-                    lrc.lyrics[time_now] = SubtitleBlock(segments[i])
-                lrc.whole_contexts += lrc.lyrics[time_now].context.replace(" ", "")
+                    lrc.lyrics[time_now] = SubtitleBlock(StyledString(segments[i]))
+                lrc.whole_contexts += str(lrc.lyrics[time_now]).replace(" ", "")
 
             elif tag_type == TagType.ID:
                 # 若为ID标签，载入信息字典中
