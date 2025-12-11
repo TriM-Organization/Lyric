@@ -1475,12 +1475,18 @@ class SubtitleBlock:
         splited_sentence: Sequence[str]
             分词列表，表示依照时间标签进行分词的单行词句
         """
+        if splited_sentence[-1]:
+            word_list_length = len(splited_sentence)
+        else:
+            word_list_length = len(splited_sentence) - 1
+            splited_sentence = splited_sentence[:-1]
+        
         time_list_length = len(time_str_list)
-        word_list_length = len(splited_sentence)
 
         if time_list_length == word_list_length:
             print("数量相同的时间与字词")
             duration_time = None
+            print(time_str_list, splited_sentence)
         elif time_list_length == word_list_length + 1:
             print("时间标签比字词多一个")
             duration_time = TimeStamp.from_lrc_timetag(time_str_list[-1])
@@ -1498,11 +1504,10 @@ class SubtitleBlock:
             extension=[
                 {
                     TimeStamp.from_lrc_timetag(time_tag_str=time_str_list[i]): [
-                        StyledString(line[i]),
+                        StyledString(splited_sentence[i]),
                     ]
-                    for line in splited_sentence
+                    for i in range(word_list_length)
                 }
-                for i in range(time_list_length)
             ],
         )
 
